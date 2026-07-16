@@ -1,0 +1,127 @@
+{
+  "name": "Voxel Frontier Micro-Water Physics Pack",
+  "version": 1,
+  "microLevels": 16,
+  "assets": [
+    {
+      "id": "flow-level-00",
+      "file": "flow-level-00.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-01",
+      "file": "flow-level-01.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-02",
+      "file": "flow-level-02.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-03",
+      "file": "flow-level-03.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-04",
+      "file": "flow-level-04.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-05",
+      "file": "flow-level-05.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-06",
+      "file": "flow-level-06.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-07",
+      "file": "flow-level-07.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-08",
+      "file": "flow-level-08.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-09",
+      "file": "flow-level-09.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-10",
+      "file": "flow-level-10.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-11",
+      "file": "flow-level-11.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-12",
+      "file": "flow-level-12.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-13",
+      "file": "flow-level-13.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-14",
+      "file": "flow-level-14.jpg",
+      "size": 1024
+    },
+    {
+      "id": "flow-level-15",
+      "file": "flow-level-15.jpg",
+      "size": 1024
+    },
+    {
+      "id": "source-water",
+      "file": "source-water.jpg",
+      "size": 1024
+    },
+    {
+      "id": "waterfall-column",
+      "file": "waterfall-column.jpg",
+      "size": 1024
+    },
+    {
+      "id": "river-current",
+      "file": "river-current.jpg",
+      "size": 1024
+    },
+    {
+      "id": "ocean-surface",
+      "file": "ocean-surface.jpg",
+      "size": 1024
+    },
+    {
+      "id": "shore-foam",
+      "file": "shore-foam.jpg",
+      "size": 1024
+    },
+    {
+      "id": "underwater-caustics",
+      "file": "underwater-caustics.jpg",
+      "size": 1024
+    },
+    {
+      "id": "wet-stone-overlay",
+      "file": "wet-stone-overlay.jpg",
+      "size": 1024
+    },
+    {
+      "id": "water-ripple-normal",
+      "file": "water-ripple-normal.jpg",
+      "size": 1024
+    }
+  ]
+}

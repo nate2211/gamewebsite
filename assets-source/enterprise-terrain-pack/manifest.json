@@ -1,0 +1,36 @@
+{
+  "pack": "Voxel Frontier Enterprise Terrain Source Pack",
+  "version": 1,
+  "runtimeLoaded": false,
+  "purpose": "4K source master for future terrain texture baking; intentionally excluded from runtime loading to preserve frame time.",
+  "files": [
+    {
+      "name": "terrain-material-master-atlas-4096.png",
+      "width": 4096,
+      "height": 4096,
+      "format": "RGB PNG",
+      "bytes": 42523447,
+      "sha256": "ecf1f83593ead61dcfdf8ced71be88a6f38feef386f96efca4634371fe949e9d",
+      "quadrants": [
+        "grass-top",
+        "dirt-with-grass-side",
+        "crop-and-seed-materials",
+        "packed-authoring-channels"
+      ]
+    },
+    {
+      "name": "terrain-normal-roughness-master-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "format": "RGBA PNG",
+      "bytes": 15801202,
+      "sha256": "b8ba825825b0fef885926a47bbe7e93e4108d743b0d8482929a5d180a0d90a23",
+      "channels": [
+        "normal-x",
+        "normal-y",
+        "normal-z",
+        "roughness-mask"
+      ]
+    }
+  ]
+}

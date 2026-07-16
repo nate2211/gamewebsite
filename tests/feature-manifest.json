@@ -1,0 +1,33 @@
+{
+  "version": "5.1.0",
+  "requiredSystems": [
+    "endless-worker-chunks",
+    "startup-spawn-streaming-fix",
+    "3x3-recipe-book-crafting",
+    "inventory-armor-stats-perks-quests-codex-backups-tabs",
+    "copper-iron-gold-diamond-armor",
+    "armor-set-bonuses",
+    "experience-levels-stat-points-automatic-perks",
+    "textured-particle-physics",
+    "saved-water-source-flow",
+    "shoreline-wave-instancing",
+    "first-person-hand-sleeve-tool-model",
+    "fixed-step-herd-pack-flock-school-pod-ai",
+    "compact-dexie-saves",
+    "world-json-export-import",
+    "static-original-item-and-block-assets",
+    "camera-mounted-layered-first-person-rendering",
+    "layered-species-death-animations-and-voxel-bursts",
+    "rotating-3d-item-inspection",
+    "animated-perk-constellation",
+    "high-resolution-cinematic-ui-texture-pack",
+    "sixteenth-block-water-flow",
+    "e-inventory-toggle",
+    "leftmost-hotbar-first-pickups",
+    "water-physics-texture-pack",
+    "connected-coastal-flood-below-sea-level",
+    "pressurized-basin-water-fill",
+    "mined-channel-water-entry",
+    "terrain-generator-cache-v11"
+  ]
+}

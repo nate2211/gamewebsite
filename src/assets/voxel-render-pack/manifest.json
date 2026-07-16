@@ -1,0 +1,326 @@
+{
+  "version": 1,
+  "pack": "Voxel Render Master Pack",
+  "assets": [
+    {
+      "id": "world-panorama-day",
+      "file": "world-panorama-day.jpg",
+      "kind": "landscape",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "world-panorama-sunset",
+      "file": "world-panorama-sunset.jpg",
+      "kind": "landscape",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "grass-top-master",
+      "file": "grass-top-master.jpg",
+      "kind": "grass",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "grass-side-master",
+      "file": "grass-side-master.jpg",
+      "kind": "grass_side",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "dirt-master",
+      "file": "dirt-master.jpg",
+      "kind": "noise",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "stone-master",
+      "file": "stone-master.jpg",
+      "kind": "stone",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "cobblestone-master",
+      "file": "cobblestone-master.jpg",
+      "kind": "cobble",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "sand-master",
+      "file": "sand-master.jpg",
+      "kind": "sand",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "snow-master",
+      "file": "snow-master.jpg",
+      "kind": "snow",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "ice-master",
+      "file": "ice-master.jpg",
+      "kind": "ice",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "oak-planks-master",
+      "file": "oak-planks-master.jpg",
+      "kind": "planks",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "oak-log-master",
+      "file": "oak-log-master.jpg",
+      "kind": "log",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "spruce-planks-master",
+      "file": "spruce-planks-master.jpg",
+      "kind": "planks",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "jungle-planks-master",
+      "file": "jungle-planks-master.jpg",
+      "kind": "planks",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "leaf-canopy-master",
+      "file": "leaf-canopy-master.jpg",
+      "kind": "leaves",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "water-master",
+      "file": "water-master.jpg",
+      "kind": "water",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "coal-ore-master",
+      "file": "coal-ore-master.jpg",
+      "kind": "ore_dark",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "copper-ore-master",
+      "file": "copper-ore-master.jpg",
+      "kind": "ore_copper",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "iron-ore-master",
+      "file": "iron-ore-master.jpg",
+      "kind": "ore_iron",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "gold-ore-master",
+      "file": "gold-ore-master.jpg",
+      "kind": "ore_gold",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "redstone-ore-master",
+      "file": "redstone-ore-master.jpg",
+      "kind": "ore_red",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "emerald-ore-master",
+      "file": "emerald-ore-master.jpg",
+      "kind": "ore_emerald",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "diamond-ore-master",
+      "file": "diamond-ore-master.jpg",
+      "kind": "ore_diamond",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "bedrock-master",
+      "file": "bedrock-master.jpg",
+      "kind": "bedrock",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "crafting-table-master",
+      "file": "crafting-table-master.jpg",
+      "kind": "craft",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "furnace-master",
+      "file": "furnace-master.jpg",
+      "kind": "furnace",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "torch-glow-master",
+      "file": "torch-glow-master.jpg",
+      "kind": "torch",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "player-sleeve-green",
+      "file": "player-sleeve-green.jpg",
+      "kind": "cloth",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "player-skin-default",
+      "file": "player-skin-default.jpg",
+      "kind": "skin",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "tool-wood-master",
+      "file": "tool-wood-master.jpg",
+      "kind": "tool",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "tool-iron-master",
+      "file": "tool-iron-master.jpg",
+      "kind": "tool",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    },
+    {
+      "id": "tool-diamond-master",
+      "file": "tool-diamond-master.jpg",
+      "kind": "tool",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "purpose": "voxel world/UI source material"
+    }
+  ]
+}

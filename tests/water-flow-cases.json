@@ -1,0 +1,17 @@
+{
+  "microLevels": 16,
+  "sourceHeight": 0.9375,
+  "flowHeights": {
+    "level1": 0.9375,
+    "level8": 0.5,
+    "level15": 0.0625
+  },
+  "horizontalDistance": 12,
+  "verticalDistance": 32,
+  "inventoryKey": "E",
+  "pickupOrder": "leftmost hotbar first",
+  "coastalFloodMargin": 18,
+  "terrainGeneratorVersion": 11,
+  "basinFill": "full lower layers with micro-height top surface",
+  "openedChannelFlow": true
+}

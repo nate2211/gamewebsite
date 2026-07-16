@@ -1,0 +1,246 @@
+{
+  "version": 1,
+  "style": "original voxel sandbox pixel UI",
+  "assets": [
+    {
+      "file": "menu-grass-sky.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Main menu pixel sky and grass"
+    },
+    {
+      "file": "inventory-stone-grid.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Inventory stone grid"
+    },
+    {
+      "file": "crafting-oak-grid.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Crafting workbench grid"
+    },
+    {
+      "file": "furnace-cobble-fire.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Furnace cobble and ember texture"
+    },
+    {
+      "file": "armor-iron-workshop.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Armor workshop blocks"
+    },
+    {
+      "file": "stats-emerald-grid.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Stats emerald rune grid"
+    },
+    {
+      "file": "perks-enchant-grid.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Perk enchantment block grid"
+    },
+    {
+      "file": "quests-pixel-map.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Pixel map quest background"
+    },
+    {
+      "file": "codex-bookshelf.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Codex bookshelf background"
+    },
+    {
+      "file": "performance-redstone.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Performance redstone instrumentation"
+    },
+    {
+      "file": "backups-chest-planks.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Backup chest and planks"
+    },
+    {
+      "file": "item-obsidian-vault.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Item inspection obsidian vault"
+    },
+    {
+      "file": "pause-cobblestone.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Pause menu cobblestone"
+    },
+    {
+      "file": "dialog-oak-planks.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Dialog oak planks"
+    },
+    {
+      "file": "ocean-water-grid.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Ocean water texture"
+    },
+    {
+      "file": "biome-block-mosaic.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Biome block mosaic"
+    },
+    {
+      "file": "cave-deep-stone.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Deep cave stone"
+    },
+    {
+      "file": "ore-wall.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Ore wall"
+    },
+    {
+      "file": "leaves-canopy.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Leaves canopy"
+    },
+    {
+      "file": "snow-blocks.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Snow block field"
+    },
+    {
+      "file": "sand-blocks.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Sand block field"
+    },
+    {
+      "file": "water-blocks.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Water block field"
+    },
+    {
+      "file": "mossy-stone.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Mossy stone bricks"
+    },
+    {
+      "file": "cloud-panorama.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Voxel cloud panorama"
+    },
+    {
+      "file": "hotbar-dark-oak.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Dark oak quickbar surface"
+    },
+    {
+      "file": "crafting-birch-grid.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Birch crafting grid alternative"
+    },
+    {
+      "file": "furnace-deep-cobble.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Deep cobble furnace alternative"
+    },
+    {
+      "file": "armor-diamond-workshop.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Diamond armor workshop alternative"
+    },
+    {
+      "file": "stats-lapis-grid.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Lapis attribute grid alternative"
+    },
+    {
+      "file": "quests-desert-map.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Desert exploration map alternative"
+    },
+    {
+      "file": "codex-jungle-shelf.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Jungle codex shelf alternative"
+    },
+    {
+      "file": "pause-night-stone.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Night stone pause surface"
+    },
+    {
+      "file": "terrain-grass-overview.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Grass biome texture reference"
+    },
+    {
+      "file": "terrain-dirt-reference.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Dirt-toned texture reference"
+    },
+    {
+      "file": "terrain-stone-reference.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Stone texture reference"
+    },
+    {
+      "file": "terrain-deep-cave.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Deep cave texture reference"
+    },
+    {
+      "file": "terrain-jungle-canopy.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Jungle canopy texture reference"
+    },
+    {
+      "file": "terrain-frozen-field.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Frozen biome texture reference"
+    },
+    {
+      "file": "terrain-beach-field.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Beach biome texture reference"
+    },
+    {
+      "file": "terrain-ocean-field.jpg",
+      "width": 1024,
+      "height": 1024,
+      "description": "Ocean biome texture reference"
+    }
+  ]
+}

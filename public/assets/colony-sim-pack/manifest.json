@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "guard-post",
+      "file": "guard-post.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "miner-hut",
+      "file": "miner-hut.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "farm-house",
+      "file": "farm-house.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "rancher-barn",
+      "file": "rancher-barn.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "fishing-hut",
+      "file": "fishing-hut.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "colony-ledger",
+      "file": "colony-ledger.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "farmland-dry",
+      "file": "farmland-dry.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "farmland-wet",
+      "file": "farmland-wet.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "wheat-field",
+      "file": "wheat-field.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "animal-pen",
+      "file": "animal-pen.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "fishing-bobber",
+      "file": "fishing-bobber.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "rain-sheet",
+      "file": "rain-sheet.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "snow-field",
+      "file": "snow-field.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "bird-flock",
+      "file": "bird-flock.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "leather-workshop",
+      "file": "leather-workshop.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "hoe-toolbench",
+      "file": "hoe-toolbench.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "worker-skins",
+      "file": "worker-skins.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "seed-pantry",
+      "file": "seed-pantry.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "egg-hatchery",
+      "file": "egg-hatchery.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    },
+    {
+      "id": "colony-map",
+      "file": "colony-map.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "purpose": "original voxel colony simulation texture master"
+    }
+  ]
+}

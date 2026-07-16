@@ -1,0 +1,98 @@
+[
+  {
+    "id": "obsidian-vault",
+    "file": "/assets/ui-cinematic/obsidian-vault.jpg",
+    "pattern": "cracks",
+    "bytes": 232347
+  },
+  {
+    "id": "forged-iron",
+    "file": "/assets/ui-cinematic/forged-iron.jpg",
+    "pattern": "scratches",
+    "bytes": 228450
+  },
+  {
+    "id": "ancient-parchment",
+    "file": "/assets/ui-cinematic/ancient-parchment.jpg",
+    "pattern": "fibers",
+    "bytes": 239610
+  },
+  {
+    "id": "rune-stone-blue",
+    "file": "/assets/ui-cinematic/rune-stone-blue.jpg",
+    "pattern": "runes",
+    "bytes": 239721
+  },
+  {
+    "id": "rune-stone-red",
+    "file": "/assets/ui-cinematic/rune-stone-red.jpg",
+    "pattern": "runes",
+    "bytes": 237500
+  },
+  {
+    "id": "emerald-velvet",
+    "file": "/assets/ui-cinematic/emerald-velvet.jpg",
+    "pattern": "cloth",
+    "bytes": 229475
+  },
+  {
+    "id": "dragon-scale",
+    "file": "/assets/ui-cinematic/dragon-scale.jpg",
+    "pattern": "scales",
+    "bytes": 242856
+  },
+  {
+    "id": "weathered-map",
+    "file": "/assets/ui-cinematic/weathered-map.jpg",
+    "pattern": "map",
+    "bytes": 231709
+  },
+  {
+    "id": "gold-filigree",
+    "file": "/assets/ui-cinematic/gold-filigree.jpg",
+    "pattern": "filigree",
+    "bytes": 244947
+  },
+  {
+    "id": "frost-glass",
+    "file": "/assets/ui-cinematic/frost-glass.jpg",
+    "pattern": "frost",
+    "bytes": 233804
+  },
+  {
+    "id": "crimson-cloth",
+    "file": "/assets/ui-cinematic/crimson-cloth.jpg",
+    "pattern": "cloth",
+    "bytes": 235067
+  },
+  {
+    "id": "starfield",
+    "file": "/assets/ui-cinematic/starfield.jpg",
+    "pattern": "stars",
+    "bytes": 248459
+  },
+  {
+    "id": "armor-hall",
+    "file": "/assets/ui-cinematic/armor-hall.jpg",
+    "pattern": "pillars",
+    "bytes": 220895
+  },
+  {
+    "id": "item-vault",
+    "file": "/assets/ui-cinematic/item-vault.jpg",
+    "pattern": "grid",
+    "bytes": 221978
+  },
+  {
+    "id": "perk-constellation",
+    "file": "/assets/ui-cinematic/perk-constellation.jpg",
+    "pattern": "constellation",
+    "bytes": 231768
+  },
+  {
+    "id": "menu-mist",
+    "file": "/assets/ui-cinematic/menu-mist.jpg",
+    "pattern": "mist",
+    "bytes": 216486
+  }
+]

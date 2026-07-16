@@ -1,0 +1,27 @@
+const fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
+const failures=[];
+const requireText=(source,text,message)=>{if(!source.includes(text))failures.push(message)};
+const generator=read('src/game/world/generation/worldGenerator.js');
+const flood=read('src/game/liquids/coastalFlood.js');
+const liquid=read('src/game/liquids/liquidRuntime.js');
+const interaction=read('src/game/systems/InteractionController.js');
+const runtime=read('src/game/core/worldRuntime.js');
+const home=read('src/pages/HomePage.js');
+const game=read('src/pages/GamePage.js');
+requireText(generator,'COASTAL_FLOOD_MARGIN = 18','coastal flood margin missing');
+requireText(generator,'buildConnectedCoastalFloodMask','coastal flood helper not integrated');
+requireText(generator,'if (seaConnected)','sea-connected columns are not filled');
+requireText(generator,'TERRAIN_GENERATOR_VERSION = 11','terrain generator cache version missing');
+requireText(flood,'profile.height >= seaLevel','sea-level barriers are not respected');
+requireText(flood,'profile?.biome === "ocean"','ocean flood seeds missing');
+requireText(liquid,'pressurized','pressure-based basin fill missing');
+requireText(liquid,'belowHasLiquid','liquid support stacking missing');
+requireText(liquid,'flowIntoOpenedCell','opened-channel flow missing');
+requireText(interaction,'liquidRuntime.flowIntoOpenedCell(brokenPosition)','mining does not open water channels');
+requireText(runtime,'[[0, 1, 0], [1, 0, 0]','water side-wall visibility missing');
+requireText(home,'generatorVersion: TERRAIN_GENERATOR_VERSION','new-world cache version missing');
+requireText(game,'bootstrapCache?.generatorVersion === TERRAIN_GENERATOR_VERSION','old terrain caches are not invalidated');
+if(failures.length){console.error(failures.join('\n'));process.exit(1)}
+console.log('Coastal water integration validation passed.');

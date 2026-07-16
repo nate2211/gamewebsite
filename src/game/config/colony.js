@@ -1,0 +1,52 @@
+export const COLONY_JOB_TYPES = {
+  guard: { label: "Guard", color: "#9e443d", description: "Patrols the settlement and attacks hostile mobs." },
+  miner: { label: "Miner", color: "#747b82", description: "Searches nearby loaded terrain for stone and ore." },
+  farmer: { label: "Farmer", color: "#6f943f", description: "Tills soil, plants seeds, grows crops, and harvests wheat." },
+  rancher: { label: "Animal Keeper", color: "#9a6b48", description: "Groups, feeds, and breeds passive animals." },
+  fisher: { label: "Fisher", color: "#3f729e", description: "Works near water and delivers fish to colony storage." },
+};
+
+export const COLONY_BOX_TO_JOB = {
+  guard_colony_box: "guard",
+  miner_colony_box: "miner",
+  farm_colony_box: "farmer",
+  animal_colony_box: "rancher",
+  fishing_colony_box: "fisher",
+};
+
+export const COLONY_WORKER_NAMES = [
+  "Alden", "Briar", "Cora", "Dellan", "Elsie", "Fen", "Greta", "Hollis",
+  "Iris", "Joren", "Kaia", "Linden", "Mara", "Nolan", "Orla", "Perrin",
+];
+
+export const COLONY_DEFAULT_STATE = {
+  stations: [],
+  storage: {},
+  crops: [],
+  totals: {
+    blocksMined: 0,
+    cropsHarvested: 0,
+    animalsManaged: 0,
+    fishCaught: 0,
+    hostilesStopped: 0,
+  },
+};
+
+export const COLONY_TICK_SECONDS = 0.5;
+export const COLONY_WORK_RADIUS = 18;
+export const COLONY_GUARD_RADIUS = 20;
+export const COLONY_MAX_MANAGED_ANIMALS = 8;
+export const FARM_PLOT_OFFSETS = Array.from({ length: 49 }, (_, index) => {
+  const x = (index % 7) - 3;
+  const z = Math.floor(index / 7) - 3;
+  return [x, z];
+}).filter(([x, z]) => Math.abs(x) > 1 || Math.abs(z) > 1);
+
+export function cloneColonyState(source = COLONY_DEFAULT_STATE) {
+  return {
+    stations: Array.isArray(source.stations) ? source.stations.map((station) => ({ ...station, position: [...station.position], managedAnimalIds: [...(station.managedAnimalIds || [])] })) : [],
+    storage: { ...(source.storage || {}) },
+    crops: Array.isArray(source.crops) ? source.crops.map((crop) => ({ ...crop, position: [...crop.position] })) : [],
+    totals: { ...COLONY_DEFAULT_STATE.totals, ...(source.totals || {}) },
+  };
+}

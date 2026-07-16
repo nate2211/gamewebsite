@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "count": 8,
+  "description": "Original pixel grass, plant growth and farming references for Voxel Frontier v9.",
+  "files": [
+    "farming-growth-chart.png",
+    "grass-cap-reference.png",
+    "grass-side-dirt-clean.png",
+    "grass-top-clean.png",
+    "meadow-grass-growth-stages.png",
+    "natural-block-palette.png",
+    "seed-items-sheet.png",
+    "yellow-flower-growth-stages.png"
+  ]
+}
