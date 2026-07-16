@@ -5,12 +5,15 @@ import seedrandom from "seedrandom";
 import { BLOCK_TYPES, DEFAULT_HOTBAR, INITIAL_INVENTORY } from "../../config/blockTypes";
 import { createMob } from "../../config/mobTypes";
 import { DIRECTIONS, blockKey } from "../../utils/worldUtils";
+import { buildConnectedCoastalFloodMask } from "../../liquids/coastalFlood";
 
 export const CHUNK_SIZE = 10;
 export const RENDER_DISTANCE = 3;
 // Keep startup fast. The remaining chunks stream during browser idle time.
 export const INITIAL_RENDER_DISTANCE = 1;
 export const SEA_LEVEL = 8;
+export const TERRAIN_GENERATOR_VERSION = 14;
+export const COASTAL_FLOOD_MARGIN = 18;
 // 1,200 ticks maps to about 7:12 AM in the HUD.
 export const WORLD_START_TIME = 1200;
 export const BIOME_NAMES = [
@@ -182,6 +185,25 @@ export function sampleSurfaceProfile(seedText, x, z) {
   };
 }
 
+function surfaceProfileKey(x, z) {
+  return `${x},${z}`;
+}
+
+function buildCoastalFloodMask(generator, minX, maxX, minZ, maxZ) {
+  return buildConnectedCoastalFloodMask({
+    minX,
+    maxX,
+    minZ,
+    maxZ,
+    margin: COASTAL_FLOOD_MARGIN,
+    seaLevel: SEA_LEVEL,
+    profileAt: (x, z) => {
+      const biome = chooseBiome(generator, x, z);
+      return { biome, height: biomeHeight(generator, biome, x, z) };
+    },
+  });
+}
+
 function surfaceBlocksForBiome(generator, biome, x, z, height) {
   if (biome === "ocean") return ["sand", "sand", "sandstone"];
   if (biome === "beach") return ["sand", "sand", "sandstone"];
@@ -221,6 +243,22 @@ function addBroadleafTree(blocks, bounds, generator, x, groundY, z, jungle = fal
       }
     }
   }
+
+  // Jungle trees carry deterministic hanging vines. Vines are non-solid and
+  // extend downward until they meet terrain or their seeded length expires.
+  if (jungle) {
+    const vineSides = [[radius + 1, 0], [-radius - 1, 0], [0, radius + 1], [0, -radius - 1]];
+    vineSides.forEach(([vx, vz], sideIndex) => {
+      if (coordinateRandom(generator.seedHash, x + vx, z + vz, 3201 + sideIndex) < 0.34) return;
+      const length = 2 + Math.floor(coordinateRandom(generator.seedHash, x + vx, z + vz, 3249 + sideIndex) * 6);
+      for (let step = 0; step < length; step += 1) {
+        const vy = centerY + 1 - step;
+        const key = blockKey(x + vx, vy, z + vz);
+        if (blocks[key]) break;
+        setBlock(blocks, ...bounds, x + vx, vy, z + vz, "vine");
+      }
+    });
+  }
 }
 
 function addSpruceTree(blocks, bounds, generator, x, groundY, z) {
@@ -256,7 +294,8 @@ function computeChunkVisibleByType(blocks) {
     if (!definition) return;
     const [x, y, z] = key.split(",").map(Number);
     const exposed = current.type === "water"
-      ? blocks[blockKey(x, y + 1, z)]?.type !== "water"
+      ? [[0, 1, 0], [1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1]]
+          .some(([dx, dy, dz]) => blocks[blockKey(x + dx, y + dy, z + dz)]?.type !== "water")
       : definition.solid === false || DIRECTIONS.some(([dx, dy, dz]) => {
           const neighbor = blocks[blockKey(x + dx, y + dy, z + dz)];
           if (!neighbor) return true;
@@ -281,13 +320,19 @@ export function generateChunk(seedText, cx, cz) {
   const bounds = [minX, maxX, minZ, maxZ];
   const blocks = {};
   const biomes = {};
+  const coastalFlood = buildCoastalFloodMask(generator, minX, maxX, minZ, maxZ);
 
   for (let x = minX; x <= maxX; x += 1) {
     for (let z = minZ; z <= maxZ; z += 1) {
-      const biome = chooseBiome(generator, x, z);
-      const height = biomeHeight(generator, biome, x, z);
+      const profileKey = surfaceProfileKey(x, z);
+      const cachedProfile = coastalFlood.profiles.get(profileKey);
+      const biome = cachedProfile?.biome || chooseBiome(generator, x, z);
+      const height = cachedProfile?.height ?? biomeHeight(generator, biome, x, z);
+      const seaConnected = coastalFlood.flooded.has(profileKey);
       biomes[`${x},${z}`] = biome;
-      const surface = surfaceBlocksForBiome(generator, biome, x, z, height);
+      const surface = seaConnected && biome !== "ice"
+        ? ["sand", "sand", "sandstone"]
+        : surfaceBlocksForBiome(generator, biome, x, z, height);
 
       for (let y = 0; y <= height; y += 1) {
         let type = "stone";
@@ -312,12 +357,43 @@ export function generateChunk(seedText, cx, cz) {
         blocks[blockKey(x, y, z)] = { type };
       }
 
-      if (biome === "ocean") {
+      if (seaConnected) {
         for (let y = height + 1; y <= SEA_LEVEL; y += 1) blocks[blockKey(x, y, z)] = { type: "water" };
         const plantRoll = coordinateRandom(generator.seedHash, x, z, 1703);
-        if (height + 2 <= SEA_LEVEL && plantRoll > 0.79) {
+        const waterDepth = SEA_LEVEL - height;
+        if (waterDepth >= 2 && plantRoll > 0.79) {
           blocks[blockKey(x, height + 1, z)] = { type: plantRoll > 0.94 ? "kelp" : "seagrass" };
           if (plantRoll > 0.96 && height + 2 < SEA_LEVEL) blocks[blockKey(x, height + 2, z)] = { type: "kelp" };
+        }
+      }
+      if (!seaConnected && ["plains", "forest", "jungle", "hills", "beach"].includes(biome)) {
+        const plantRoll = coordinateRandom(generator.seedHash, x, z, 2609);
+        const plantKey = blockKey(x, height + 1, z);
+        const groundType = blocks[blockKey(x, height, z)]?.type;
+        if (biome === "beach" && height <= SEA_LEVEL + 1 && plantRoll > 0.94) {
+          blocks[plantKey] = { type: "reeds" };
+        } else if (groundType === "grass") {
+          // Ground foliage is always a separate walk-through plant block above
+          // the grass cube. This keeps the grass top static and prevents the old
+          // colored slab artifacts from appearing inside the terrain surface.
+          if (plantRoll > 0.955) blocks[plantKey] = { type: "yellow_flower_2" };
+          else if (plantRoll > 0.7) blocks[plantKey] = { type: "meadow_grass_2" };
+        }
+      }
+      if (!seaConnected && biome === "ice" && blocks[blockKey(x, height, z)]?.type === "snow") {
+        const layerRoll = coordinateRandom(generator.seedHash, x, z, 2819);
+        if (layerRoll > 0.43) blocks[blockKey(x, height + 1, z)] = { type: "snow_layer" };
+      }
+      // Jungle cliff faces can also trail vines away from trees.
+      if (!seaConnected && biome === "jungle" && coordinateRandom(generator.seedHash, x, z, 2927) > 0.965) {
+        const neighborHeight = biomeHeight(generator, biome, x + 1, z);
+        const drop = height - neighborHeight;
+        if (drop >= 3) {
+          const length = Math.min(7, drop - 1);
+          for (let step = 1; step <= length; step += 1) {
+            const vineKey = blockKey(x + 1, height - step + 1, z);
+            if (!blocks[vineKey]) blocks[vineKey] = { type: "vine" };
+          }
         }
       }
     }
@@ -367,13 +443,13 @@ function createInitialMobs(seedText) {
     add(landTypes[index % landTypes.length], findBiomePosition(seedText, ["plains", "forest", "hills", "beach"], random));
   }
   ["wolf", "wolf", "iron_golem"].forEach((type) => add(type, findBiomePosition(seedText, ["plains", "forest"], random)));
-  ["zombie", "skeleton", "slime", "zombie", "skeleton", "slime", "zombie", "skeleton"].forEach((type) =>
+  ["zombie", "skeleton", "spider", "slime", "zombie", "skeleton", "spider", "zombie", "skeleton"].forEach((type) =>
     add(type, findBiomePosition(seedText, ["plains", "forest", "hills", "mountains"], random, 14, 90))
   );
   ["fish", "fish", "fish", "big_fish", "shark", "dolphin", "dolphin", "turtle"].forEach((type) =>
     add(type, findBiomePosition(seedText, ["ocean"], random, 22, 180), type === "turtle" ? 0.5 : 0)
   );
-  ["bird", "bird", "bird", "bird", "bird"].forEach((type) => {
+  ["bird", "bird", "seagull", "seagull", "crow", "bird", "crow"].forEach((type) => {
     const position = findBiomePosition(seedText, ["plains", "forest", "jungle", "beach", "ocean"], random, 12, 100);
     if (position) {
       position.height = Math.max(position.height, SEA_LEVEL) + 8 + random() * 8;
@@ -437,6 +513,11 @@ export function generateWorld(seedText = "frontier") {
     mobs: createInitialMobs(seed),
     mount: null,
     furnaces: {},
+    colony: { stations: [], storage: {}, crops: [], totals: { blocksMined: 0, cropsHarvested: 0, animalsManaged: 0, fishCaught: 0, hostilesStopped: 0 } },
+    crops: [],
+    droppedItems: [],
+    fishing: { active: false, bite: false, message: "", caught: 0 },
+    weather: { type: "clear", intensity: 0, startedAt: 0, endsAt: 0 },
     liquids: [],
   };
 }

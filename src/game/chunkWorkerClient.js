@@ -14,6 +14,7 @@ export default class ChunkWorkerClient {
           const request = this.pending.get(requestId);
           if (!request) return;
           this.pending.delete(requestId);
+          if (request.timer) clearTimeout(request.timer);
           if (ok) request.resolve(chunk);
           else request.reject(new Error(error || "Chunk worker failed"));
         };
@@ -40,8 +41,21 @@ export default class ChunkWorkerClient {
 
     const requestId = this.nextRequestId++;
     return new Promise((resolve, reject) => {
-      this.pending.set(requestId, { resolve, reject, seed, cx, cz });
-      this.worker.postMessage({ requestId, seed, cx, cz });
+      const timer = setTimeout(() => {
+        // A worker can occasionally fail without dispatching an error event.
+        // Fall back to main-thread generation instead of leaving startup stuck.
+        if (this.pending.has(requestId)) this.fallbackAll();
+      }, 6000);
+      this.pending.set(requestId, { resolve, reject, seed, cx, cz, timer });
+      try {
+        this.worker.postMessage({ requestId, seed, cx, cz });
+      } catch (error) {
+        clearTimeout(timer);
+        this.pending.delete(requestId);
+        this.worker?.terminate();
+        this.worker = null;
+        reject(error);
+      }
     });
   }
 
@@ -50,13 +64,17 @@ export default class ChunkWorkerClient {
     this.pending.clear();
     this.worker?.terminate();
     this.worker = null;
-    queued.forEach(({ resolve, seed, cx, cz }) => {
+    queued.forEach(({ resolve, seed, cx, cz, timer }) => {
+      if (timer) clearTimeout(timer);
       setTimeout(() => resolve(generateChunk(seed, cx, cz)), 0);
     });
   }
 
   dispose() {
-    this.pending.forEach(({ reject }) => reject(new Error("Chunk worker disposed")));
+    this.pending.forEach(({ reject, timer }) => {
+      if (timer) clearTimeout(timer);
+      reject(new Error("Chunk worker disposed"));
+    });
     this.pending.clear();
     this.worker?.terminate();
     this.worker = null;

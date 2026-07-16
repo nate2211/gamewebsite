@@ -11,6 +11,8 @@ const GROUPS = {
   big_fish: "school",
   dolphin: "pod",
   bird: "flock",
+  seagull: "flock",
+  crow: "flock",
   turtle: "colony",
 };
 
@@ -108,20 +110,28 @@ export function computeGroupSteering(mob, mobs, runtimeMap, radius = 8) {
 
 export function chooseRoamingState(runtime, definition, random = Math.random) {
   const roll = random();
-  if (roll < 0.22 && !definition.hostile) {
+  runtime.activitySpeedMultiplier = 1;
+  const grouped = Boolean(groupKind(runtime.type));
+  const grazer = Boolean(definition.grazer || definition.herdAnimal);
+  const predator = Boolean(definition.packHunter || definition.neutralPredator);
+  const flyer = Boolean(definition.flying);
+
+  if ((grazer && roll < 0.28) || (!definition.hostile && roll < 0.18)) {
     runtime.behaviorState = "idle";
-    runtime.behaviorTimer = 0.8 + random() * 2.8;
+    runtime.behaviorTimer = grazer ? 1.8 + random() * 3.6 : 0.8 + random() * 2.8;
     runtime.moving = false;
     return;
   }
-  if (roll < 0.4 && groupKind(runtime.type)) {
+
+  if ((grouped && roll < 0.58) || (flyer && roll < 0.68)) {
     runtime.behaviorState = "group";
-    runtime.behaviorTimer = 1.4 + random() * 3.2;
+    runtime.behaviorTimer = 1.8 + random() * 3.6;
     return;
   }
-  runtime.behaviorState = roll > 0.92 ? "run" : "roam";
-  runtime.behaviorTimer = 1.2 + random() * 4.2;
-  runtime.direction += (random() - 0.5) * Math.PI * 1.7;
+
+  runtime.behaviorState = roll > (predator ? 0.72 : 0.9) ? "run" : "roam";
+  runtime.behaviorTimer = grazer ? 1.8 + random() * 5.2 : 1.2 + random() * 4.2;
+  runtime.direction += (random() - 0.5) * Math.PI * (predator ? 1.1 : 1.7);
 }
 
 export function applyGroupDirection(runtime, steering, weight = 1) {

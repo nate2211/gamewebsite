@@ -1,6 +1,6 @@
-import React, { memo, useMemo, useRef } from "react";
+import React, { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import DayNightCycle from "../../../game/systems/DayNightCycle";
 import ChunkStreamer from "../../../game/world/streaming/ChunkStreamer";
 import InteractionController from "../../../game/systems/InteractionController";
@@ -13,22 +13,80 @@ import { getInitialPixelRatio, getPerformanceProfile } from "../../../game/confi
 import ParticleSystem from "../../../game/particles/ParticleSystem";
 import LiquidSystem from "../../../game/liquids/LiquidSystem";
 import ShoreWaveSystem from "../../../game/ocean/ShoreWaveSystem";
+import ViewportController from "./ViewportController";
+import VoxelSky from "../../../game/world/rendering/VoxelSky";
+import ColonySystem from "../../../game/colonies/ColonySystem";
+import FarmSystem from "../../../game/farming/FarmSystem";
+import FishingSystem from "../../../game/fishing/FishingSystem";
+import ItemDropSystem from "../../../game/items/drops/ItemDropSystem";
+import ProjectileSystem from "../../../game/projectiles/ProjectileSystem";
+import WeatherSystem from "../../../game/weather/WeatherSystem";
+import RemotePlayersLayer from "../../multiplayer/RemotePlayersLayer";
 
-function GameCanvas({ playerRef, simulationEnabled, onCanvasReady, onOpenStation, onTerrainError }) {
+
+function PausedWorldFrameKeeper({ active }) {
+  const { gl, invalidate } = useThree();
+
+  useEffect(() => {
+    if (!active) return undefined;
+    const refresh = () => {
+      if (!gl.isContextLost?.()) invalidate();
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 160);
+    window.addEventListener("resize", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("resize", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [active, gl, invalidate]);
+
+  return null;
+}
+
+function GameCanvas({
+  playerRef,
+  simulationEnabled,
+  terrainReady,
+  bootstrapRadius = 0,
+  viewModelVisible,
+  onCanvasReady,
+  onChunkRendered,
+  onChunkUnmounted,
+  onTerrainRenderable,
+  onTerrainUnavailable,
+  onOpenStation,
+  onTerrainError,
+}) {
   const profile = useMemo(getPerformanceProfile, []);
   const blockTargetRef = useRef(null);
   const mobTargetRef = useRef(null);
   const miningVisualRef = useRef(null);
   const actionAnimationRef = useRef(null);
   const mountRef = useRef(null);
+  const [renderWarmup, setRenderWarmup] = useState(true);
+  const streamingEnabled = terrainReady && (simulationEnabled || profile.continueStreamingWhilePaused);
+
+  useEffect(() => {
+    if (!terrainReady) {
+      setRenderWarmup(true);
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setRenderWarmup(false), 1800);
+    return () => window.clearTimeout(timer);
+  }, [terrainReady]);
 
   return (
     <div className="game-canvas-wrap">
       <Canvas
-        frameloop={simulationEnabled ? "always" : "demand"}
+        frameloop={simulationEnabled || !terrainReady || renderWarmup ? "always" : "demand"}
         shadows={false}
-        camera={{ fov: 72, near: 0.05, far: profile.cameraFar }}
+        camera={{ fov: profile.cameraFov, near: 0.05, far: profile.cameraFar }}
         dpr={getInitialPixelRatio(profile)}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", touchAction: "none" }}
+        resize={{ scroll: false, debounce: { scroll: 0, resize: 0 } }}
         gl={{
           antialias: false,
           alpha: false,
@@ -49,33 +107,54 @@ function GameCanvas({ playerRef, simulationEnabled, onCanvasReady, onOpenStation
           onCanvasReady(gl.domElement);
         }}
       >
+        <ViewportController />
+        <PausedWorldFrameKeeper active={!simulationEnabled && terrainReady} />
         <PerformanceGovernor enabled={simulationEnabled} />
+        <VoxelSky />
         <DayNightCycle enabled={simulationEnabled} />
         <ChunkStreamer
           playerRef={playerRef}
-          enabled={simulationEnabled}
+          enabled={streamingEnabled}
+          bootstrapRadius={bootstrapRadius}
           onStreamError={onTerrainError}
         />
         <WorldRenderer
           targetRef={blockTargetRef}
           miningVisualRef={miningVisualRef}
           playerRef={playerRef}
+          onChunkRendered={onChunkRendered}
+          onChunkUnmounted={onChunkUnmounted}
+          onTerrainRenderable={onTerrainRenderable}
+          onTerrainUnavailable={onTerrainUnavailable}
+          interactionEnabled={simulationEnabled}
         />
         <LiquidSystem enabled={simulationEnabled} />
         <ShoreWaveSystem />
+        <WeatherSystem playerRef={playerRef} enabled={simulationEnabled} />
+        <FarmSystem active={terrainReady} />
+        <ColonySystem enabled={simulationEnabled} />
         <ParticleSystem />
+        <ItemDropSystem playerRef={playerRef} enabled={simulationEnabled} />
+        <ProjectileSystem />
+        <FishingSystem enabled={simulationEnabled} />
         <MobSystem
           playerRef={playerRef}
           targetRef={mobTargetRef}
           mountRef={mountRef}
           enabled={simulationEnabled}
         />
+        <RemotePlayersLayer />
         <PlayerController
           playerRef={playerRef}
           mountRef={mountRef}
           controlsEnabled={simulationEnabled}
+          worldReady={terrainReady}
         />
-        <FirstPersonViewModel actionAnimationRef={actionAnimationRef} enabled={simulationEnabled} />
+        <FirstPersonViewModel
+          actionAnimationRef={actionAnimationRef}
+          visible={viewModelVisible}
+          animateEnabled={simulationEnabled}
+        />
         <InteractionController
           blockTargetRef={blockTargetRef}
           mobTargetRef={mobTargetRef}

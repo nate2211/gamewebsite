@@ -13,22 +13,26 @@ const runtimeSource = read("src/game/core/worldRuntime.js");
 for (const needle of [
   "instanceMatricesReady",
   "Register only after the matrices and bounds exist",
-  "mountedMeshCount === 0",
+  "!centerChunkMounted",
   "onChunkUnmounted",
-  "two browser frames",
+  "!terrainVisuallyStable && <TerrainSurfaceShell",
 ]) {
   if (!renderer.includes(needle)) failures.push(`WorldRenderer missing render-persistence guard: ${needle}`);
 }
-for (const needle of ["renderWarmup", "1400", "!terrainReady || renderWarmup"]) {
+for (const needle of ["renderWarmup", "1800", "!terrainReady || renderWarmup"]) {
   if (!canvas.includes(needle)) failures.push(`GameCanvas missing render warm-up: ${needle}`);
 }
 for (const needle of [
   "worldRuntime.pinChunks",
-  "Restoring the rendered voxel terrain",
+  "Readiness is a one-way startup gate",
+  "|| terrainReady) return",
   "onTerrainUnavailable",
   "onChunkUnmounted",
 ]) {
-  if (!page.includes(needle)) failures.push(`GamePage missing terrain-retention recovery: ${needle}`);
+  if (!page.includes(needle)) failures.push(`GamePage missing continuous terrain-retention contract: ${needle}`);
+}
+if (page.includes("Restoring the rendered voxel terrain")) {
+  failures.push("GamePage still contains the legacy auto-pause terrain restoration gate");
 }
 for (const needle of ["this.pinnedChunks", "pinChunks(ids)", "if (this.pinnedChunks.has(id)) return"]) {
   if (!runtimeSource.includes(needle)) failures.push(`worldRuntime missing pinned-chunk retention: ${needle}`);
@@ -75,4 +79,4 @@ if (failures.length) {
   console.error(failures.join("\n"));
   process.exit(1);
 }
-console.log("Render persistence validation passed: matrices are populated before readiness, spawn chunks remain pinned, fallback voxels persist until real meshes mount, and disappearing terrain re-locks gameplay.");
+console.log("Render persistence validation passed: matrices are populated before readiness, spawn chunks remain pinned, fallback voxels persist until real meshes mount, and late terrain never re-locks gameplay.");

@@ -4,14 +4,16 @@ import { useFrame } from "@react-three/fiber";
 import { getBlockMaterials } from "../world/rendering/voxelTextures";
 import { createParticleVelocity, integrateParticle } from "../physics/particlePhysics";
 import { particleRuntime } from "./particleRuntime";
+import { readRuntimeSettings } from "../config/runtimeSettings";
 
 const PARTICLE_GEOMETRY = new THREE.BoxGeometry(0.13, 0.13, 0.13);
 const DUMMY = new THREE.Object3D();
 
 function BlockParticleBurst({ burst }) {
   const meshRef = useRef();
+  const particleCount = useMemo(() => Math.max(2, Math.round(burst.count * Math.max(0.25, Math.min(1.5, readRuntimeSettings().particleDensity || 1)))), [burst.count]);
   const finishedRef = useRef(false);
-  const bodies = useMemo(() => Array.from({ length: burst.count }, (_, index) => ({
+  const bodies = useMemo(() => Array.from({ length: particleCount }, (_, index) => ({
     position: new THREE.Vector3(
       burst.position[0] + (Math.random() - 0.5) * 0.45,
       burst.position[1] + (Math.random() - 0.5) * 0.45,
@@ -25,7 +27,7 @@ function BlockParticleBurst({ burst }) {
       (Math.random() - 0.5) * 9
     ),
     scale: 0.72 + Math.random() * 0.5,
-  })), [burst]);
+  })), [burst, particleCount]);
   const materials = useMemo(() => {
     const source = getBlockMaterials(burst.blockType);
     const material = (Array.isArray(source) ? source[0] : source).clone();
@@ -67,7 +69,7 @@ function BlockParticleBurst({ burst }) {
   return (
     <instancedMesh
       ref={meshRef}
-      args={[PARTICLE_GEOMETRY, materials, Math.max(1, burst.count)]}
+      args={[PARTICLE_GEOMETRY, materials, Math.max(1, particleCount)]}
       frustumCulled={false}
       castShadow={false}
       receiveShadow={false}

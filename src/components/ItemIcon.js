@@ -115,6 +115,46 @@ function drawTool(ctx, definition) {
 
 function drawMaterial(ctx, itemId, definition) {
   const color = definition.color || "#cccccc";
+  if (itemId === "boat") {
+    polygon(ctx, [[8, 28], [18, 20], [51, 20], [58, 29], [50, 48], [16, 48]], "#8d5d31");
+    polygon(ctx, [[16, 24], [48, 24], [43, 40], [21, 40]], "#3b2a1d", null);
+    ctx.strokeStyle = "#c18a50";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(14, 31); ctx.lineTo(2, 18);
+    ctx.moveTo(50, 31); ctx.lineTo(62, 18);
+    ctx.stroke();
+    return;
+  }
+  if (itemId === "wheat") {
+    ctx.strokeStyle = "#8f6d25";
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(31, 55); ctx.lineTo(33, 12); ctx.stroke();
+    ctx.fillStyle = "#e1bd50";
+    for (let i = 0; i < 6; i += 1) {
+      ctx.beginPath(); ctx.ellipse(25, 18 + i * 6, 6, 3, -0.45, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(40, 16 + i * 6, 6, 3, 0.45, 0, Math.PI * 2); ctx.fill();
+    }
+    return;
+  }
+  if (itemId === "apple") {
+    ctx.fillStyle = "#d83b36";
+    ctx.beginPath(); ctx.arc(31, 35, 17, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#f06c58";
+    ctx.beginPath(); ctx.arc(25, 29, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#5f3a1f"; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(32, 18); ctx.lineTo(35, 9); ctx.stroke();
+    ctx.fillStyle = "#55a447";
+    ctx.beginPath(); ctx.ellipse(42, 13, 8, 4, 0.4, 0, Math.PI * 2); ctx.fill();
+    return;
+  }
+  if (itemId.includes("fish")) {
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.ellipse(31, 32, 19, 11, 0, 0, Math.PI * 2); ctx.fill();
+    polygon(ctx, [[12, 32], [2, 21], [2, 43]], shade(color, -0.2), null);
+    ctx.fillStyle = "#101010"; ctx.fillRect(42, 28, 3, 3);
+    return;
+  }
   if (itemId.includes("ingot")) {
     polygon(ctx, [[13, 39], [23, 23], [49, 20], [55, 34], [44, 46], [20, 47]], shade(color, -0.08));
     polygon(ctx, [[23, 23], [49, 20], [43, 29], [20, 32]], shade(color, 0.36));

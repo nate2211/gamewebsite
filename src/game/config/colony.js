@@ -33,6 +33,9 @@ export const COLONY_DEFAULT_STATE = {
 };
 
 export const COLONY_TICK_SECONDS = 0.5;
+export const COLONY_RESPAWN_MIN_MS = 5 * 60 * 1000;
+export const COLONY_RESPAWN_MAX_MS = 10 * 60 * 1000;
+export const COLONY_STATION_MAX_HEALTH = 60;
 export const COLONY_WORK_RADIUS = 18;
 export const COLONY_GUARD_RADIUS = 20;
 export const COLONY_MAX_MANAGED_ANIMALS = 8;
@@ -44,7 +47,7 @@ export const FARM_PLOT_OFFSETS = Array.from({ length: 49 }, (_, index) => {
 
 export function cloneColonyState(source = COLONY_DEFAULT_STATE) {
   return {
-    stations: Array.isArray(source.stations) ? source.stations.map((station) => ({ ...station, position: [...station.position], managedAnimalIds: [...(station.managedAnimalIds || [])] })) : [],
+    stations: Array.isArray(source.stations) ? source.stations.map((station) => ({ ...station, position: [...station.position], managedAnimalIds: [...(station.managedAnimalIds || [])], health: Number.isFinite(station.health) ? station.health : 60, maxHealth: Number.isFinite(station.maxHealth) ? station.maxHealth : 60, workerState: station.workerState || (station.respawnAt ? "respawning" : "working"), respawnAt: Number(station.respawnAt) || 0, deathCount: Number(station.deathCount) || 0 })) : [],
     storage: { ...(source.storage || {}) },
     crops: Array.isArray(source.crops) ? source.crops.map((crop) => ({ ...crop, position: [...crop.position] })) : [],
     totals: { ...COLONY_DEFAULT_STATE.totals, ...(source.totals || {}) },

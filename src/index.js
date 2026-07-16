@@ -1,17 +1,26 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { Provider } from "react-redux";
+import { BrowserRouter, HashRouter } from "react-router-dom";
+import { CssBaseline, ThemeProvider } from "@mui/material";
+import App from "./App";
+import { store } from "./app/store";
+import { theme } from "./theme";
+import "./index.css";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = createRoot(document.getElementById("root"));
+const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;
+
+// The real-time engine owns Web Workers, pointer-lock listeners, and a fixed-step
+// simulation. Avoiding StrictMode's development-only double mount prevents a
+// second worker/game-loop startup when running `npm start`.
 root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  <Provider store={store}>
+    <Router>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <App />
+      </ThemeProvider>
+    </Router>
+  </Provider>
 );
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();

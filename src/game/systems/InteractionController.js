@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef } from "react";
+import * as THREE from "three";
 import { useDispatch, useSelector } from "react-redux";
 import { useFrame, useThree } from "@react-three/fiber";
 import {
   breakBlock,
   consumeItem,
+  consumeThrowableItem,
   cycleSelected,
   damageMob,
   emptyWaterBucket,
@@ -11,14 +13,18 @@ import {
   interactMob,
   placeBlock,
   placeBoat,
+  plantCrop,
   setSelectedIndex,
+  tillSoil,
 } from "../../features/world/worldSlice";
-import { BLOCK_TYPES, ITEM_TYPES, getMiningProfile } from "../config/blockTypes";
+import { BLOCK_TYPES, ITEM_TYPES, getMiningProfile, getPlantGrowth } from "../config/blockTypes";
 import { SEA_LEVEL } from "../world/generation/worldGenerator";
 import { worldRuntime } from "../core/worldRuntime";
 import { particleRuntime } from "../particles/particleRuntime";
 import { liquidRuntime } from "../liquids/liquidRuntime";
 import { getMiningSpeedMultiplier } from "../config/progression";
+import { blockKey } from "../utils/worldUtils";
+import { projectileRuntime } from "../projectiles/projectileRuntime";
 
 const PLAYER_RADIUS = 0.3;
 const PLAYER_HEIGHT = 1.8;
@@ -50,7 +56,8 @@ export default function InteractionController({
   const hotbar = useSelector((state) => state.world.hotbar);
   const inventory = useSelector((state) => state.world.inventory);
   const progression = useSelector((state) => state.world.progression);
-  const { gl } = useThree();
+  const { gl, camera } = useThree();
+  const throwDirectionRef = useRef(new THREE.Vector3());
   const miningRef = useRef({ held: false, key: null, elapsed: 0, duration: 1, toolId: null, lastSwingAt: 0, lastParticleStage: -1 });
   const attackCooldownRef = useRef(0);
 
@@ -139,6 +146,9 @@ export default function InteractionController({
       const removed = worldRuntime.removeBlock(blockTarget.key);
       if (removed) {
         dispatch(breakBlock({ key: blockTarget.key, blockType: removed.type, toolId: mining.toolId }));
+        // If the mined block opened a channel beside ocean or flowing water,
+        // immediately seed the liquid solver so the lower terrain floods.
+        liquidRuntime.flowIntoOpenedCell(brokenPosition);
       }
       mining.held = false;
       clearMining(false);
@@ -192,6 +202,52 @@ export default function InteractionController({
           target.position[1] + target.normal[1],
           target.position[2] + target.normal[2],
         ] : null;
+
+        if (usableSelectedItem === "egg") {
+          camera.getWorldDirection(throwDirectionRef.current);
+          projectileRuntime.throwEgg(
+            { x: camera.position.x, y: camera.position.y - 0.12, z: camera.position.z },
+            throwDirectionRef.current
+          );
+          dispatch(consumeThrowableItem("egg"));
+          return;
+        }
+
+        const selectedTool = ITEM_TYPES[usableSelectedItem];
+        if (target && selectedTool?.toolType === "hoe" && ["grass", "dirt", "frozen_grass"].includes(target.type)) {
+          if (worldRuntime.replaceBlock(target.position, "farmland")) {
+            dispatch(tillSoil({ key: target.key, position: target.position, toolId: usableSelectedItem }));
+            particleRuntime.emitBlockParticles({
+              position: target.position,
+              blockType: target.type,
+              count: 7,
+              intensity: 0.55,
+              kind: "chip",
+            });
+          }
+          return;
+        }
+
+        const selectedPlantType = ITEM_TYPES[usableSelectedItem]?.plantType || null;
+        const plantGrowth = getPlantGrowth(selectedPlantType);
+        if (target && target.normal?.[1] > 0.5 && plantGrowth) {
+          const allowedGround = plantGrowth.requiresFarmland
+            ? target.type === "farmland"
+            : ["grass", "dirt", "farmland", "frozen_grass"].includes(target.type);
+          if (allowedGround) {
+            const cropPosition = [target.position[0], target.position[1] + 1, target.position[2]];
+            const cropKey = blockKey(...cropPosition);
+            if (!worldRuntime.hasBlockAt(...cropPosition) && worldRuntime.setBlock(cropPosition, plantGrowth.stages[0])) {
+              dispatch(plantCrop({
+                position: cropPosition,
+                key: cropKey,
+                plantType: selectedPlantType,
+                groundPosition: target.position,
+              }));
+            }
+            return;
+          }
+        }
 
         if (usableSelectedItem === "water_bucket" && adjacentPosition) {
           if (!worldRuntime.hasBlockAt(...adjacentPosition) && liquidRuntime.addSource(adjacentPosition)) {
@@ -276,6 +332,7 @@ export default function InteractionController({
   }, [
     actionAnimationRef,
     blockTargetRef,
+    camera,
     clearMining,
     dispatch,
     enabled,

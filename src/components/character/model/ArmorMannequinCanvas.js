@@ -1,8 +1,20 @@
-import React, { memo, useMemo, useRef } from "react";
+import React, { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useSelector } from "react-redux";
 import { ITEM_TYPES } from "../../../game/config/blockTypes";
+
+
+function PreviewTicker({ fps = 20 }) {
+  const { invalidate } = useThree();
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") invalidate();
+    }, Math.max(34, Math.round(1000 / fps)));
+    return () => window.clearInterval(interval);
+  }, [fps, invalidate]);
+  return null;
+}
 
 const SKIN = "#c58b68";
 const CLOTH = "#202936";
@@ -119,11 +131,13 @@ function ArmorMannequinCanvas() {
   return (
     <div className="armor-mannequin-canvas" aria-label="Rotating 3D player armor preview">
       <Canvas
-        dpr={[1, 1.35]}
+        frameloop="demand"
+        dpr={[0.85, 1.1]}
         camera={{ position: [0, 1.35, 6.2], fov: 38, near: 0.1, far: 30 }}
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+        gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
         shadows={false}
       >
+        <PreviewTicker fps={20} />
         <Scene armor={armor} />
       </Canvas>
     </div>

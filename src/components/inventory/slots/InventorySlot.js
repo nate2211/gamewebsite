@@ -1,15 +1,17 @@
-import React from "react";
+import React, { memo, useCallback } from "react";
 import { Box, LinearProgress, Typography } from "@mui/material";
 import ItemIcon from "../../items/icons/ItemIcon";
 import { getItemDefinition } from "../../../game/config/blockTypes";
 
-export default function InventorySlot({
+function InventorySlot({
   itemId,
   count,
   durability,
   selected,
   hotbarNumber,
   onClick,
+  onActivate,
+  activationValue,
   emptyLabel,
   label,
   compact = false,
@@ -18,12 +20,18 @@ export default function InventorySlot({
   const durabilityPercent = definition?.durability && durability != null
     ? Math.max(0, Math.min(100, (durability / definition.durability) * 100))
     : null;
+  const interactive = Boolean(onClick || onActivate);
+  const handleClick = useCallback(() => {
+    if (onActivate) onActivate(activationValue ?? itemId);
+    else onClick?.();
+  }, [activationValue, itemId, onActivate, onClick]);
 
   return (
     <Box
       component="button"
+      className={`inventory-slot ${selected ? "is-selected" : ""}`}
       type="button"
-      onClick={onClick}
+      onClick={interactive ? handleClick : undefined}
       title={definition?.name || emptyLabel || "Empty slot"}
       sx={{
         appearance: "none",
@@ -37,9 +45,9 @@ export default function InventorySlot({
         position: "relative",
         display: "grid",
         placeItems: "center",
-        cursor: onClick ? "pointer" : "default",
+        cursor: interactive ? "pointer" : "default",
         boxShadow: "inset 0 0 0 1px rgba(0,0,0,.6)",
-        "&:hover": onClick ? { bgcolor: "rgba(255,255,255,.12)" } : undefined,
+        "&:hover": interactive ? { bgcolor: "rgba(255,255,255,.12)" } : undefined,
       }}
     >
       {hotbarNumber != null && (
@@ -75,3 +83,5 @@ export default function InventorySlot({
     </Box>
   );
 }
+
+export default memo(InventorySlot);

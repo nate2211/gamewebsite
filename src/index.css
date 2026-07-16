@@ -1,13 +1,1488 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+:root {
+  color-scheme: dark;
+  --app-height: 100dvh;
+  --app-width: 100vw;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #05080d;
+}
+
+html {
+  position: fixed;
+  inset: 0;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+#root {
+  position: fixed;
+  inset: 0;
+  isolation: isolate;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.game-root {
+  position: fixed;
+  inset: 0;
+  width: var(--app-width, 100vw);
+  height: var(--app-height, 100dvh);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #05080d;
+  contain: layout size paint;
+}
+
+.game-canvas-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #05080d;
+}
+
+.game-canvas-wrap > div,
+.game-canvas-wrap canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  outline: none;
+  touch-action: none;
+}
+
+.pixel-shadow {
+  text-shadow: 0 2px 0 #000, 0 0 8px rgba(0, 0, 0, 0.9);
+}
+
+@supports not (height: 100dvh) {
+  :root {
+    --app-height: 100vh;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Legacy interface structure
+   ------------------------------------------------------------------------- */
+.rpg-menu-paper {
+  margin: 0 !important;
+  width: 100vw !important;
+  max-width: none !important;
+  height: var(--app-height, 100dvh) !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  background: #070a0e !important;
+}
+
+.rpg-menu-shell {
+  --rpg-accent: #c69a50;
+  --rpg-accent-soft: rgba(198, 154, 80, 0.2);
+  position: relative;
+  height: 100%;
+  padding: 0 !important;
+  overflow: hidden;
+  color: #f2eee4;
+  background:
+    radial-gradient(circle at 72% 15%, rgba(66, 86, 111, 0.25), transparent 30%),
+    radial-gradient(circle at 10% 80%, rgba(138, 82, 44, 0.18), transparent 34%),
+    linear-gradient(115deg, rgba(5, 8, 12, 0.98), rgba(13, 18, 24, 0.97));
+}
+
+.rpg-menu-shell.station-crafting_table { --rpg-accent: #d39a48; }
+.rpg-menu-shell.station-furnace { --rpg-accent: #e36e35; }
+
+.rpg-menu-shell::before,
+.rpg-menu-shell::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  inset: 0;
+}
+
+.rpg-menu-shell::before {
+  opacity: 0.25;
+  background-image:
+    linear-gradient(30deg, transparent 48%, rgba(255,255,255,.025) 49%, rgba(255,255,255,.025) 51%, transparent 52%),
+    linear-gradient(150deg, transparent 48%, rgba(255,255,255,.018) 49%, rgba(255,255,255,.018) 51%, transparent 52%);
+  background-size: 46px 80px;
+}
+
+.rpg-menu-shell::after {
+  box-shadow: inset 0 0 120px rgba(0,0,0,.95), inset 0 0 0 1px rgba(198,154,80,.22);
+}
+
+.rpg-menu-header {
+  position: relative;
+  z-index: 2;
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: minmax(270px, 1fr) auto minmax(270px, 1fr);
+  align-items: center;
+  gap: 20px;
+  padding: max(14px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right)) 14px max(22px, env(safe-area-inset-left));
+  border-bottom: 1px solid rgba(198,154,80,.34);
+  background: linear-gradient(180deg, rgba(4,7,10,.96), rgba(9,13,18,.86));
+  box-shadow: 0 16px 40px rgba(0,0,0,.42);
+}
+
+.rpg-menu-brand,
+.rpg-menu-active-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rpg-menu-sigil {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #f7dfad;
+  font-weight: 1000;
+  letter-spacing: .08em;
+  border: 1px solid rgba(224,183,103,.72);
+  transform: rotate(45deg);
+  background: radial-gradient(circle, rgba(198,154,80,.26), rgba(36,26,16,.92));
+  box-shadow: inset 0 0 18px rgba(255,216,139,.16), 0 0 24px rgba(198,154,80,.12);
+}
+
+.rpg-menu-sigil::first-letter { transform: rotate(-45deg); }
+.rpg-menu-brand > div:last-child { min-width: 0; }
+.rpg-menu-brand .MuiTypography-overline-root { color: #ad9d82; letter-spacing: .18em; }
+.rpg-menu-brand .MuiTypography-h4 { font-family: Georgia, "Times New Roman", serif; letter-spacing: .025em; }
+
+.rpg-menu-active-title {
+  flex-direction: column;
+  gap: 1px;
+  min-width: 220px;
+  text-align: center;
+}
+.rpg-menu-active-title strong { font-family: Georgia, serif; font-size: 1.28rem; color: #f4deb4; }
+.rpg-menu-active-title span { color: #908b82; font-size: .76rem; letter-spacing: .12em; text-transform: uppercase; }
+.rpg-close-button { justify-self: end; border: 1px solid rgba(255,255,255,.14) !important; background: rgba(0,0,0,.32) !important; }
+
+.rpg-menu-body {
+  position: relative;
+  z-index: 1;
+  height: calc(100% - 132px);
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+}
+
+.rpg-tab-rail {
+  min-width: 0;
+  padding: 18px 12px 22px max(14px, env(safe-area-inset-left));
+  overflow-y: auto;
+  border-right: 1px solid rgba(198,154,80,.2);
+  background: linear-gradient(90deg, rgba(3,5,8,.94), rgba(9,13,18,.8));
+}
+
+.rpg-tab-button {
+  position: relative;
+  width: 100%;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 7px;
+  padding: 8px 10px;
+  color: #bbb5aa;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  transition: transform .16s ease, color .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.rpg-tab-button:hover { transform: translateX(3px); color: #fff2d2; background: rgba(255,255,255,.035); }
+.rpg-tab-button.is-active {
+  color: #fff4d8;
+  border-color: rgba(198,154,80,.46);
+  background: linear-gradient(90deg, rgba(198,154,80,.2), rgba(198,154,80,.035));
+  box-shadow: inset 3px 0 0 var(--rpg-accent), 0 0 28px rgba(198,154,80,.07);
+}
+
+.rpg-tab-glyph {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.13);
+  transform: rotate(45deg) scale(.82);
+  background: rgba(0,0,0,.45);
+}
+.rpg-tab-glyph > svg { transform: rotate(-45deg) scale(1.08); }
+.rpg-tab-button.is-active .rpg-tab-glyph { border-color: var(--rpg-accent); color: #f7d791; }
+.rpg-tab-copy { display: flex; flex-direction: column; min-width: 0; }
+.rpg-tab-copy strong { font-size: .93rem; }
+.rpg-tab-copy small { margin-top: 2px; color: #777b80; font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; }
+
+.rpg-menu-content { min-width: 0; overflow: hidden; }
+.rpg-content-scroll {
+  height: 100%;
+  overflow: auto;
+  padding: 28px clamp(18px, 3vw, 48px) 54px;
+  scrollbar-color: rgba(198,154,80,.6) rgba(255,255,255,.04);
+}
+.rpg-content-scroll::before {
+  content: "";
+  position: fixed;
+  right: 5vw;
+  top: 20%;
+  width: 36vw;
+  height: 58vh;
+  pointer-events: none;
+  opacity: .08;
+  background: radial-gradient(circle, transparent 25%, rgba(198,154,80,.8) 26%, transparent 27%), repeating-conic-gradient(from 0deg, rgba(198,154,80,.9) 0 2deg, transparent 2deg 30deg);
+  filter: blur(.2px);
+  border-radius: 50%;
+}
+
+.rpg-menu-footer {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 max(22px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(22px, env(safe-area-inset-left));
+  color: #777b80;
+  font-size: .72rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  border-top: 1px solid rgba(255,255,255,.07);
+  background: rgba(4,6,9,.88);
+}
+
+.rpg-section-heading {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 22px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(198,154,80,.26);
+}
+.rpg-section-heading::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 112px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--rpg-accent, #c69a50), transparent);
+}
+.rpg-section-heading .MuiTypography-h5 { font-family: Georgia, serif; color: #f4dfb7; }
+
+.inventory-category-strip {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 2px 2px 12px;
+  margin-bottom: 10px;
+}
+.inventory-category-strip button {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  color: #a7a39a;
+  border: 1px solid rgba(255,255,255,.11);
+  background: rgba(0,0,0,.3);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  font-size: .72rem;
+}
+.inventory-category-strip button.is-active {
+  color: #ffe5ae;
+  border-color: rgba(198,154,80,.65);
+  background: rgba(198,154,80,.13);
+}
+
+.inventory-adventure-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, .65fr);
+  gap: 24px;
+  align-items: start;
+}
+.inventory-grid-panel,
+.item-detail-panel,
+.level-banner,
+.attribute-card,
+.perk-path,
+.armor-stage,
+.armor-defense-track,
+.rpg-recipe-card {
+  border: 1px solid rgba(198,154,80,.2);
+  background:
+    linear-gradient(145deg, rgba(24,31,39,.94), rgba(9,13,18,.95)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.015) 0 1px, transparent 1px 7px);
+  box-shadow: inset 0 0 40px rgba(0,0,0,.32), 0 14px 35px rgba(0,0,0,.22);
+}
+.inventory-grid-panel { padding: clamp(12px, 2vw, 20px); }
+.inventory-slot-grid,
+.hotbar-display-grid {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(40px, 1fr));
+  gap: 6px;
+}
+.inventory-slot {
+  overflow: hidden;
+  border-radius: 2px !important;
+  background-image: radial-gradient(circle at 50% 38%, rgba(255,255,255,.05), transparent 56%) !important;
+}
+.inventory-slot::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,.045);
+}
+.inventory-slot.is-selected { box-shadow: inset 0 0 20px rgba(198,154,80,.22), 0 0 14px rgba(198,154,80,.2) !important; }
+
+.item-detail-panel {
+  position: sticky;
+  top: 0;
+  min-height: 470px;
+  overflow: hidden;
+  padding: 24px;
+  text-align: center;
+}
+.item-detail-glow {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  width: 230px;
+  height: 230px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  opacity: .28;
+  background: radial-gradient(circle, var(--item-color), transparent 65%);
+  filter: blur(13px);
+}
+.item-detail-icon {
+  position: relative;
+  z-index: 1;
+  width: 150px;
+  height: 150px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 12px;
+  font-size: 4rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.08), rgba(0,0,0,.48) 68%);
+  border: 1px solid rgba(198,154,80,.35);
+}
+.item-stat-list { margin-top: 20px; border-top: 1px solid rgba(255,255,255,.08); }
+.item-stat-list > div { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.06); color: #9ea4a9; }
+.item-stat-list strong { color: #f6e5bf; }
+
+.character-screen { min-height: 620px; }
+.defense-medallion,
+.level-orb {
+  width: 82px;
+  height: 82px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(221,183,107,.66);
+  background: radial-gradient(circle, rgba(198,154,80,.28), rgba(10,13,17,.9) 68%);
+  box-shadow: inset 0 0 18px rgba(255,225,155,.12), 0 0 26px rgba(198,154,80,.12);
+}
+.defense-medallion span,
+.level-orb span { font-family: Georgia, serif; font-size: 1.8rem; font-weight: 1000; color: #ffe1a1; line-height: 1; }
+.defense-medallion small,
+.level-orb small { margin-top: 4px; font-size: .55rem; letter-spacing: .14em; color: #a49272; }
+
+.armor-stage {
+  position: relative;
+  min-height: 590px;
+  overflow: hidden;
+  background: radial-gradient(circle at center, rgba(64,83,102,.24), transparent 38%), linear-gradient(145deg, rgba(16,22,29,.98), rgba(6,9,13,.98));
+}
+.armor-stage::before,
+.armor-stage::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.armor-stage::before { width: 460px; height: 460px; border: 1px solid rgba(198,154,80,.2); box-shadow: 0 0 70px rgba(198,154,80,.05); }
+.armor-stage::after { width: 330px; height: 330px; border: 1px dashed rgba(198,154,80,.18); }
+.armor-mannequin-canvas { position: absolute; inset: 20px 16% 80px; z-index: 1; }
+.armor-mannequin-canvas canvas { display: block; width: 100% !important; height: 100% !important; }
+.armor-node {
+  position: absolute;
+  z-index: 3;
+  width: clamp(74px, 8vw, 102px);
+  filter: drop-shadow(0 8px 13px rgba(0,0,0,.55));
+}
+.armor-node::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: clamp(30px, 5vw, 80px);
+  height: 1px;
+  background: linear-gradient(90deg, rgba(198,154,80,.6), transparent);
+}
+.armor-node-label { display: block; margin-bottom: 5px; color: #d8c7a4; font-size: .68rem; letter-spacing: .13em; text-transform: uppercase; }
+.armor-node-helmet { left: 5%; top: 9%; }
+.armor-node-chestplate { right: 5%; top: 25%; }
+.armor-node-leggings { left: 5%; top: 54%; }
+.armor-node-boots { right: 5%; top: 67%; }
+.armor-node-helmet::after,
+.armor-node-leggings::after { left: 100%; }
+.armor-node-chestplate::after,
+.armor-node-boots::after { right: 100%; transform: rotate(180deg); }
+.armor-stage-caption {
+  position: absolute;
+  z-index: 4;
+  left: 18%;
+  right: 18%;
+  bottom: 20px;
+  padding: 12px 18px;
+  text-align: center;
+  border-top: 1px solid rgba(198,154,80,.3);
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,.78), transparent);
+}
+.armor-stage-caption strong { display: block; color: #f6ddb0; font-family: Georgia, serif; }
+.armor-stage-caption span { display: block; margin-top: 4px; color: #8f9294; font-size: .76rem; }
+.armor-defense-track { margin-top: 15px; padding: 14px 18px; }
+.armor-defense-track > div { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.armor-owned-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+.armor-card { display: grid; grid-template-columns: 58px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 11px; border: 1px solid rgba(255,255,255,.09); background: rgba(9,13,18,.72); }
+.armor-card.is-equipped { border-color: rgba(198,154,80,.55); box-shadow: inset 3px 0 0 var(--rpg-accent); }
+.armor-card-copy { min-width: 0; }
+.rpg-empty-state { padding: 30px; color: #8b8d8e; text-align: center; border: 1px dashed rgba(255,255,255,.14); }
+
+.level-banner { display: grid; grid-template-columns: auto minmax(160px,1fr) auto; gap: 22px; align-items: center; padding: 18px 22px; margin-bottom: 18px; }
+.level-banner-progress .MuiLinearProgress-root { height: 10px; background: rgba(0,0,0,.42); }
+.level-banner-meta { display: grid; grid-template-columns: auto auto; column-gap: 8px; font-size: .74rem; color: #8f9294; }
+.level-banner-meta strong { color: #f0d8a9; text-align: right; }
+.attribute-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(245px, 1fr)); gap: 13px; }
+.attribute-card { position: relative; overflow: hidden; min-height: 260px; padding: 20px; }
+.attribute-card::before { content: ""; position: absolute; inset: auto -50px -70px auto; width: 190px; height: 190px; border-radius: 50%; background: radial-gradient(circle, var(--attribute-color), transparent 70%); opacity: .16; }
+.attribute-glyph { width: 58px; height: 58px; display: grid; place-items: center; font-size: 1.75rem; color: var(--attribute-color); border: 1px solid color-mix(in srgb, var(--attribute-color) 65%, transparent); transform: rotate(45deg); }
+.attribute-glyph::first-letter { transform: rotate(-45deg); }
+.attribute-copy { margin-top: 14px; min-height: 105px; }
+.attribute-copy .MuiTypography-h4 { color: var(--attribute-color); }
+.attribute-pips { display: grid; grid-template-columns: repeat(10,1fr); gap: 3px; margin: 12px 0; }
+.attribute-pips span { height: 4px; background: rgba(255,255,255,.08); }
+.attribute-pips span.is-filled { background: var(--attribute-color); box-shadow: 0 0 8px color-mix(in srgb, var(--attribute-color) 70%, transparent); }
+
+.perk-path-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+.perk-path { position: relative; overflow: hidden; padding: 18px; }
+.perk-path::before { content: ""; position: absolute; inset: 0; opacity: .07; background: repeating-radial-gradient(circle at 20% 10%, var(--perk-color) 0 1px, transparent 2px 17px); }
+.perk-path-header { position: relative; display: grid; grid-template-columns: 58px minmax(0,1fr) auto; gap: 12px; align-items: center; margin-bottom: 12px; }
+.perk-path-header > strong { font-family: Georgia, serif; font-size: 2rem; color: var(--perk-color); }
+.perk-path-icon { width: 52px; height: 52px; display: grid; place-items: center; color: var(--perk-color); font-size: 1.5rem; border: 1px solid var(--perk-color); border-radius: 50%; background: rgba(0,0,0,.34); }
+.perk-path .MuiLinearProgress-root { height: 5px; margin-bottom: 16px; background: rgba(0,0,0,.45); }
+.perk-path .MuiLinearProgress-bar { background: var(--perk-color); }
+.perk-node-list { position: relative; }
+.perk-node { position: relative; display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 12px; min-height: 92px; opacity: .58; }
+.perk-node.is-unlocked { opacity: 1; }
+.perk-node-medallion { position: relative; z-index: 2; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(255,255,255,.18); background: #111820; }
+.perk-node.is-unlocked .perk-node-medallion { color: #fff1c7; border-color: var(--perk-color); box-shadow: 0 0 20px color-mix(in srgb, var(--perk-color) 30%, transparent); }
+.perk-node-connector { position: absolute; z-index: 1; left: 19px; top: 40px; bottom: -1px; width: 1px; background: linear-gradient(var(--perk-color), rgba(255,255,255,.08)); }
+.perk-node small { display: block; margin-top: 5px; color: var(--perk-color); font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; }
+
+.recipe-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.rpg-recipe-card { padding: 15px; }
+.rpg-recipe-card.is-ready { border-color: rgba(93,180,105,.42); }
+.rpg-recipe-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+
+/* Pause screen receives the same visual language without obscuring terrain. */
+.cinematic-pause-backdrop { background: radial-gradient(circle at 50% 35%, rgba(24,38,52,.38), rgba(2,4,7,.82)) !important; backdrop-filter: blur(5px) saturate(.75) !important; }
+.cinematic-pause-panel { border: 1px solid rgba(198,154,80,.45); background: linear-gradient(150deg, rgba(14,19,25,.97), rgba(5,8,12,.98)) !important; box-shadow: inset 0 0 60px rgba(0,0,0,.35), 0 35px 80px rgba(0,0,0,.55) !important; }
+
+@media (max-width: 920px) {
+  .rpg-menu-header { grid-template-columns: 1fr auto; }
+  .rpg-menu-active-title { display: none; }
+  .rpg-menu-body { grid-template-columns: 84px minmax(0,1fr); }
+  .rpg-tab-copy { display: none; }
+  .rpg-tab-button { grid-template-columns: 1fr; justify-items: center; }
+  .inventory-adventure-layout { grid-template-columns: 1fr; }
+  .item-detail-panel { position: relative; min-height: 0; }
+  .inventory-slot-grid,
+  .hotbar-display-grid { grid-template-columns: repeat(6, minmax(40px,1fr)); }
+  .armor-mannequin-canvas { left: 11%; right: 11%; }
+  .level-banner { grid-template-columns: 1fr; }
+  .level-banner-meta { grid-template-columns: auto 1fr; }
+}
+
+@media (max-width: 620px) {
+  .rpg-menu-header { min-height: 76px; padding: 10px 12px; }
+  .rpg-menu-sigil { width: 42px; height: 42px; }
+  .rpg-menu-brand .MuiTypography-h4 { font-size: 1.25rem; }
+  .rpg-menu-brand .MuiTypography-overline-root { font-size: .55rem; }
+  .rpg-menu-body { height: calc(100% - 116px); grid-template-columns: 64px minmax(0,1fr); }
+  .rpg-tab-rail { padding: 10px 6px 48px; }
+  .rpg-tab-button { min-height: 48px; padding: 5px; }
+  .rpg-tab-glyph { width: 31px; height: 31px; }
+  .rpg-content-scroll { padding: 16px 11px 58px; }
+  .rpg-menu-footer { padding-inline: 12px; font-size: .58rem; }
+  .rpg-menu-footer span:last-child { display: none; }
+  .inventory-slot-grid,
+  .hotbar-display-grid { grid-template-columns: repeat(5, minmax(40px,1fr)); gap: 4px; }
+  .armor-stage { min-height: 520px; }
+  .armor-mannequin-canvas { inset: 40px 5% 90px; }
+  .armor-node { width: 64px; }
+  .armor-node::after { width: 20px; }
+  .armor-stage-caption { left: 8%; right: 8%; }
+  .armor-owned-grid { grid-template-columns: 1fr; }
+  .armor-card { grid-template-columns: 52px minmax(0,1fr); }
+  .armor-card .MuiButton-root { grid-column: 1 / -1; }
+  .attribute-grid,
+  .perk-path-grid { grid-template-columns: 1fr; }
+}
+
+/* --------------------------------------------------------------------------
+   Voxel asset binding layer
+   -------------------------------------------------------------------------- */
+.rpg-menu-shell {
+  --cinematic-surface: url('./assets/ui-voxel/inventory-stone-grid.jpg');
+  background-image:
+    linear-gradient(115deg, rgba(5,7,11,.96), rgba(11,14,20,.88) 44%, rgba(3,5,8,.97)),
+    var(--cinematic-surface);
+  background-size: cover, 760px 760px;
+  background-position: center, center;
+  background-blend-mode: normal, soft-light;
+}
+.rpg-menu-shell.tab-inventory { --cinematic-surface: url('./assets/ui-voxel/item-obsidian-vault.jpg'); }
+.rpg-menu-shell.tab-crafting,
+.rpg-menu-shell.tab-workbench { --cinematic-surface: url('./assets/ui-voxel/crafting-oak-grid.jpg'); }
+.rpg-menu-shell.tab-furnace { --cinematic-surface: url('./assets/ui-voxel/pause-cobblestone.jpg'); }
+.rpg-menu-shell.tab-armor { --cinematic-surface: url('./assets/ui-voxel/armor-iron-workshop.jpg'); }
+.rpg-menu-shell.tab-stats { --cinematic-surface: url('./assets/ui-voxel/stats-emerald-grid.jpg'); }
+.rpg-menu-shell.tab-perks { --cinematic-surface: url('./assets/ui-voxel/perks-enchant-grid.jpg'); }
+.rpg-menu-shell.tab-quests { --cinematic-surface: url('./assets/ui-voxel/quests-pixel-map.jpg'); }
+.rpg-menu-shell.tab-codex { --cinematic-surface: url('./assets/ui-voxel/codex-bookshelf.jpg'); }
+.rpg-menu-shell.tab-performance { --cinematic-surface: url('./assets/ui-voxel/performance-redstone.jpg'); }
+.rpg-menu-shell.tab-backups { --cinematic-surface: url('./assets/ui-voxel/backups-chest-planks.jpg'); }
+.rpg-menu-shell::before {
+  background-image:
+    linear-gradient(90deg, transparent 0 12%, rgba(211,166,83,.13) 12.1% 12.25%, transparent 12.35% 87.7%, rgba(211,166,83,.13) 87.8% 87.95%, transparent 88%),
+    url('./assets/ui-voxel/cloud-panorama.jpg');
+  background-size: 100% 100%, cover;
+  mix-blend-mode: screen;
+  animation: cinematicMist 18s ease-in-out infinite alternate;
+}
+@keyframes cinematicMist {
+  from { opacity: .18; transform: scale(1.01) translate3d(-.5%,0,0); }
+  to { opacity: .34; transform: scale(1.045) translate3d(.5%,-.8%,0); }
+}
+.rpg-menu-header,
+.rpg-menu-footer,
+.rpg-tab-rail,
+.rpg-menu-content {
+  backdrop-filter: blur(8px) saturate(1.08);
+}
+.rpg-menu-header {
+  box-shadow: inset 0 -1px rgba(218,174,96,.22), 0 14px 36px rgba(0,0,0,.32);
+}
+.rpg-tab-button {
+  position: relative;
+  overflow: hidden;
+}
+.rpg-tab-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 20%, rgba(255,226,168,.13), transparent 78%);
+  transform: translateX(-120%);
+  transition: transform .55s ease;
+}
+.rpg-tab-button:hover::after,
+.rpg-tab-button.is-active::after { transform: translateX(120%); }
+
+.item-detail-panel {
+  overflow: hidden;
+  background-image:
+    linear-gradient(160deg, rgba(9,13,19,.92), rgba(19,24,31,.84)),
+    url('./assets/ui-voxel/item-obsidian-vault.jpg');
+  background-size: cover, 620px 620px;
+  border: 1px solid rgba(213,171,94,.3);
+  box-shadow: inset 0 0 70px rgba(0,0,0,.58), 0 24px 70px rgba(0,0,0,.35);
+}
+.item-detail-hero {
+  position: relative;
+  height: clamp(250px, 33vh, 420px);
+  margin: -4px -4px 18px;
+  border: 1px solid rgba(212,172,101,.22);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(136,177,213,.16), transparent 44%),
+    linear-gradient(180deg, rgba(0,0,0,.14), rgba(0,0,0,.6)),
+    url('./assets/ui-voxel/perks-enchant-grid.jpg') center/cover;
+  overflow: hidden;
+  clip-path: polygon(5% 0, 95% 0, 100% 8%, 100% 92%, 95% 100%, 5% 100%, 0 92%, 0 8%);
+}
+.item-detail-hero::before,
+.item-detail-hero::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+}
+.item-detail-hero::before {
+  inset: 12px;
+  border: 1px solid rgba(229,190,117,.26);
+  box-shadow: inset 0 0 32px rgba(216,169,81,.12);
+}
+.item-detail-hero::after {
+  left: 10%; right: 10%; bottom: 11%; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(241,205,135,.7), transparent);
+  box-shadow: 0 0 18px rgba(241,205,135,.55);
+}
+.item-inspection-canvas { position: absolute; inset: 0; z-index: 1; }
+.item-inspection-canvas canvas { display: block; width: 100% !important; height: 100% !important; }
+.item-inspection-empty { height: 100%; display: grid; place-items: center; color: rgba(255,255,255,.35); letter-spacing: .16em; text-transform: uppercase; }
+.item-detail-icon-corner {
+  position: absolute !important;
+  left: 18px;
+  bottom: 18px;
+  z-index: 5;
+  width: 72px !important;
+  height: 72px !important;
+  border-radius: 10px;
+  background: rgba(5,8,13,.76) !important;
+  border: 1px solid rgba(231,195,125,.35);
+  box-shadow: 0 10px 26px rgba(0,0,0,.45);
+}
+.item-detail-rarity {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 5;
+  padding: 7px 12px;
+  border: 1px solid rgba(230,196,129,.38);
+  background: rgba(4,7,11,.72);
+  color: #f2d5a2;
+  font-family: Georgia, serif;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  font-size: .67rem;
+}
+.item-stat-list > div {
+  background: linear-gradient(90deg, rgba(218,174,94,.08), transparent);
+  border-bottom: 1px solid rgba(218,174,94,.13);
+}
+
+.armor-stage {
+  min-height: 660px;
+  background-image:
+    radial-gradient(circle at 50% 43%, rgba(202,154,73,.14), transparent 36%),
+    linear-gradient(180deg, rgba(6,8,12,.22), rgba(4,6,9,.82)),
+    url('./assets/ui-voxel/armor-iron-workshop.jpg');
+  background-size: cover, cover, cover;
+  border: 1px solid rgba(218,177,102,.32);
+  box-shadow: inset 0 0 110px rgba(0,0,0,.62), 0 26px 80px rgba(0,0,0,.38);
+}
+.armor-mannequin-canvas {
+  filter: drop-shadow(0 20px 24px rgba(0,0,0,.65));
+}
+.armor-node {
+  min-width: 142px;
+  padding: 10px;
+  border: 1px solid rgba(224,184,109,.34);
+  background:
+    linear-gradient(135deg, rgba(13,16,20,.92), rgba(38,31,22,.78)),
+    url('./assets/ui-voxel/pause-cobblestone.jpg') center/cover;
+  box-shadow: inset 0 0 22px rgba(0,0,0,.58), 0 12px 30px rgba(0,0,0,.34);
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+}
+.armor-node::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 38px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(226,185,108,.7), transparent);
+  box-shadow: 0 0 9px rgba(226,185,108,.45);
+}
+.armor-node-helmet::after,
+.armor-node-chestplate::after { right: -38px; }
+.armor-node-leggings::after,
+.armor-node-boots::after { left: -38px; transform: rotate(180deg); }
+
+.perk-screen-shell { position: relative; min-height: 680px; isolation: isolate; }
+.perk-constellation-canvas {
+  position: fixed;
+  inset: 120px 20px 46px 280px;
+  pointer-events: none;
+  z-index: -1;
+  opacity: .52;
+  background: radial-gradient(circle at center, rgba(58,87,151,.2), transparent 62%);
+}
+.perk-path-grid { position: relative; z-index: 2; }
+.perk-path {
+  background-image:
+    linear-gradient(160deg, rgba(9,13,23,.9), rgba(12,16,25,.77)),
+    url('./assets/ui-voxel/perks-enchant-grid.jpg');
+  background-size: cover, 580px 580px;
+  border: 1px solid color-mix(in srgb, var(--perk-color) 38%, transparent);
+  box-shadow: inset 0 0 48px rgba(0,0,0,.54), 0 18px 44px rgba(0,0,0,.26);
+}
+.perk-node-medallion {
+  box-shadow: 0 0 0 4px rgba(0,0,0,.28), 0 0 20px color-mix(in srgb, var(--perk-color) 42%, transparent);
+}
+.perk-node.is-unlocked .perk-node-medallion { animation: perkPulse 2.6s ease-in-out infinite; }
+@keyframes perkPulse { 0%,100%{transform:scale(1);filter:brightness(1)} 50%{transform:scale(1.08);filter:brightness(1.35)} }
+
+@media (max-width: 900px) {
+  .perk-constellation-canvas { inset: 90px 0 40px 64px; }
+  .item-detail-hero { height: 270px; }
+  .armor-stage { min-height: 560px; }
+  .armor-node { min-width: 104px; }
+}
+
+/* --------------------------------------------------------------------------
+   Voxel pixel interface pass
+   Original block-game styling using system monospace fonts and generated art.
+   -------------------------------------------------------------------------- */
+:root {
+  --voxel-font: "Cascadia Mono", "Lucida Console", Consolas, "Courier New", monospace;
+  --voxel-light: rgba(255,255,255,.24);
+  --voxel-dark: rgba(0,0,0,.65);
+  --voxel-green: #79b84a;
+}
+
+body,
+button,
+input,
+textarea,
+select,
+.MuiTypography-root,
+.MuiButton-root,
+.MuiTab-root,
+.MuiChip-root {
+  font-family: var(--voxel-font) !important;
+}
+
+body,
+.MuiTypography-root {
+  text-rendering: geometricPrecision;
+}
+
+.pixel-shadow,
+.rpg-menu-brand .MuiTypography-h4,
+.rpg-menu-active-title strong,
+.rpg-section-heading .MuiTypography-h5,
+.level-orb span,
+.armor-stage-caption strong,
+.perk-path-header > strong,
+.item-detail-rarity {
+  font-family: var(--voxel-font) !important;
+  text-shadow: 3px 3px 0 #171717, -1px -1px 0 rgba(255,255,255,.08);
+  letter-spacing: .02em;
+}
+
+.rpg-menu-shell {
+  --rpg-accent: var(--voxel-green);
+  --rpg-accent-soft: rgba(121,184,74,.22);
+  background-image:
+    linear-gradient(rgba(10,15,18,.82), rgba(10,15,18,.9)),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(255,255,255,.025) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(0,0,0,.16) 31px 32px),
+    var(--cinematic-surface) !important;
+  background-size: cover, 32px 32px, 32px 32px, 760px 760px !important;
+  image-rendering: pixelated;
+}
+
+.rpg-menu-shell::before {
+  opacity: .1 !important;
+  animation: none !important;
+  mix-blend-mode: normal !important;
+}
+
+.rpg-menu-header,
+.rpg-menu-footer,
+.rpg-tab-rail,
+.rpg-menu-content {
+  backdrop-filter: none !important;
+}
+
+.rpg-menu-header,
+.rpg-menu-footer,
+.rpg-tab-rail {
+  border-color: #090b0d !important;
+  box-shadow:
+    inset 3px 3px 0 var(--voxel-light),
+    inset -3px -3px 0 var(--voxel-dark),
+    0 4px 0 rgba(0,0,0,.45) !important;
+}
+
+.rpg-menu-sigil,
+.rpg-tab-glyph,
+.rpg-tab-button,
+.rpg-close-button,
+.item-detail-panel,
+.item-detail-hero,
+.item-detail-rarity,
+.armor-stage,
+.armor-node,
+.perk-path,
+.attribute-card,
+.cinematic-pause-panel,
+.inventory-slot {
+  border-radius: 0 !important;
+  clip-path: none !important;
+}
+
+.rpg-menu-sigil,
+.rpg-tab-glyph {
+  transform: none !important;
+  border: 3px solid #101214 !important;
+  box-shadow: inset 2px 2px 0 var(--voxel-light), inset -2px -2px 0 var(--voxel-dark) !important;
+  background: #394249 !important;
+}
+.rpg-tab-glyph > svg { transform: none !important; }
+
+.rpg-tab-button {
+  border: 3px solid transparent;
+  transition: none;
+}
+.rpg-tab-button:hover { transform: none; background: rgba(255,255,255,.08); }
+.rpg-tab-button.is-active {
+  border-color: #101214;
+  background: #59636a;
+  box-shadow: inset 3px 3px 0 rgba(255,255,255,.24), inset -3px -3px 0 rgba(0,0,0,.55) !important;
+}
+.rpg-tab-button::after { display: none; }
+
+.inventory-slot,
+.hotbar-display-grid > *,
+.inventory-slot-grid > * {
+  image-rendering: pixelated;
+  border: 3px solid #17191a !important;
+  background: #51575b !important;
+  box-shadow: inset 3px 3px 0 rgba(255,255,255,.25), inset -3px -3px 0 rgba(0,0,0,.62) !important;
+}
+.inventory-slot:hover { background: #656d72 !important; }
+.inventory-slot.is-selected {
+  border-color: #f7f7f7 !important;
+  box-shadow: inset 3px 3px 0 rgba(255,255,255,.32), inset -3px -3px 0 rgba(0,0,0,.55), 0 0 0 2px #1b1b1b !important;
+}
+.inventory-slot img,
+.item-detail-icon-corner img,
+.MuiAvatar-img { image-rendering: pixelated; }
+
+.item-detail-panel,
+.armor-stage,
+.perk-path,
+.attribute-card,
+.cinematic-pause-panel {
+  border: 4px solid #111518 !important;
+  box-shadow: inset 4px 4px 0 rgba(255,255,255,.16), inset -4px -4px 0 rgba(0,0,0,.62), 0 8px 0 rgba(0,0,0,.4) !important;
+}
+
+.item-detail-hero::before {
+  inset: 8px;
+  border: 3px solid rgba(255,255,255,.16);
+  box-shadow: inset 3px 3px 0 rgba(255,255,255,.12), inset -3px -3px 0 rgba(0,0,0,.5);
+}
+
+.MuiButton-root {
+  border-radius: 0 !important;
+  text-shadow: 2px 2px 0 rgba(0,0,0,.65);
+}
+
+.cinematic-pause-backdrop {
+  image-rendering: pixelated;
+  backdrop-filter: blur(1px) !important;
+}
+.cinematic-pause-panel {
+  background:
+    linear-gradient(rgba(39,45,49,.94), rgba(30,35,39,.96)),
+    url('./assets/ui-voxel/pause-cobblestone.jpg') center/420px !important;
+}
+
+.game-canvas-wrap canvas {
+  image-rendering: pixelated;
+}
+
+.game-root .MuiPaper-root,
+.game-root .MuiButton-root,
+.game-root .MuiLinearProgress-root,
+.game-root .MuiLinearProgress-bar {
+  border-radius: 0 !important;
+}
+.game-root .MuiPaper-root {
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,.16), inset -2px -2px 0 rgba(0,0,0,.55), 0 4px 0 rgba(0,0,0,.35);
+}
+.game-root .MuiTypography-caption,
+.game-root .MuiTypography-overline-root {
+  letter-spacing: .035em;
+}
+
+
+/* --------------------------------------------------------------------------
+   Blockstyle 4.0 — original voxel-sandbox interface
+   These rules deliberately replace the previous fantasy treatment.
+   -------------------------------------------------------------------------- */
+:root {
+  --voxel-font: ui-monospace, "Cascadia Mono", "Lucida Console", Consolas, "Courier New", monospace;
+  --voxel-border-black: #101214;
+  --voxel-panel: #5b6164;
+  --voxel-panel-light: #80878a;
+  --voxel-panel-dark: #34383a;
+  --voxel-slot: #676d70;
+  --voxel-slot-hover: #7a8285;
+  --voxel-select: #f4f4f4;
+  --voxel-xp: #77c442;
+  --voxel-water: #4b9bd1;
+}
+
+body, button, input, textarea, select,
+.MuiTypography-root, .MuiButton-root, .MuiTab-root, .MuiChip-root,
+.MuiInputBase-root, .MuiMenuItem-root {
+  font-family: var(--voxel-font) !important;
+  font-variant-ligatures: none;
+}
+
+h1, h2, h3, h4, h5, h6,
+.MuiTypography-h1, .MuiTypography-h2, .MuiTypography-h3,
+.MuiTypography-h4, .MuiTypography-h5, .MuiTypography-h6,
+.rpg-menu-brand .MuiTypography-h4,
+.rpg-menu-active-title strong {
+  font-weight: 1000 !important;
+  letter-spacing: .045em !important;
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0 #1a1a1a, -1px -1px 0 rgba(255,255,255,.12) !important;
+}
+
+.rpg-menu-shell {
+  --rpg-accent: var(--voxel-xp);
+  --rpg-accent-soft: rgba(119,196,66,.2);
+  color: #f7f7f7;
+  background-color: #252a2c !important;
+  background-image:
+    linear-gradient(rgba(24,29,31,.73), rgba(24,29,31,.86)),
+    repeating-linear-gradient(0deg, transparent 0 63px, rgba(0,0,0,.18) 63px 64px),
+    repeating-linear-gradient(90deg, transparent 0 63px, rgba(255,255,255,.025) 63px 64px),
+    var(--cinematic-surface) !important;
+  background-size: cover, 64px 64px, 64px 64px, 1024px 1024px !important;
+  background-position: center !important;
+  image-rendering: pixelated;
+}
+.rpg-menu-shell.tab-inventory { --cinematic-surface: url('./assets/ui-voxel/inventory-stone-grid.jpg'); }
+.rpg-menu-shell.tab-crafting,
+.rpg-menu-shell.tab-workbench { --cinematic-surface: url('./assets/ui-voxel/crafting-oak-grid.jpg'); }
+.rpg-menu-shell.tab-furnace { --cinematic-surface: url('./assets/ui-voxel/furnace-cobble-fire.jpg'); }
+.rpg-menu-shell.tab-armor { --cinematic-surface: url('./assets/ui-voxel/armor-iron-workshop.jpg'); }
+.rpg-menu-shell.tab-stats { --cinematic-surface: url('./assets/ui-voxel/stats-emerald-grid.jpg'); }
+.rpg-menu-shell.tab-perks { --cinematic-surface: url('./assets/ui-voxel/perks-enchant-grid.jpg'); }
+.rpg-menu-shell.tab-quests { --cinematic-surface: url('./assets/ui-voxel/quests-pixel-map.jpg'); }
+.rpg-menu-shell.tab-codex { --cinematic-surface: url('./assets/ui-voxel/codex-bookshelf.jpg'); }
+.rpg-menu-shell.tab-performance { --cinematic-surface: url('./assets/ui-voxel/performance-redstone.jpg'); }
+.rpg-menu-shell.tab-backups { --cinematic-surface: url('./assets/ui-voxel/backups-chest-planks.jpg'); }
+
+.rpg-menu-shell::before {
+  opacity: .055 !important;
+  animation: none !important;
+  mix-blend-mode: normal !important;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 1px, transparent 1px 4px) !important;
+  background-size: 4px 4px !important;
+}
+.rpg-menu-shell::after {
+  box-shadow: inset 0 0 0 4px #0b0d0e, inset 0 0 0 7px rgba(255,255,255,.1), inset 0 0 80px rgba(0,0,0,.58) !important;
+}
+
+.rpg-menu-header,
+.rpg-menu-footer,
+.rpg-tab-rail,
+.rpg-menu-content {
+  backdrop-filter: none !important;
+  background: rgba(42,47,49,.94) !important;
+}
+.rpg-menu-header,
+.rpg-menu-footer,
+.rpg-tab-rail {
+  border: 4px solid var(--voxel-border-black) !important;
+  box-shadow: inset 4px 4px 0 rgba(255,255,255,.17), inset -4px -4px 0 rgba(0,0,0,.58) !important;
+}
+.rpg-menu-header { border-width: 0 0 4px !important; }
+.rpg-menu-footer { border-width: 4px 0 0 !important; }
+.rpg-tab-rail { border-width: 0 4px 0 0 !important; }
+
+.rpg-menu-sigil {
+  color: #e9f3df !important;
+  background: #5a8f38 !important;
+  border: 4px solid #111 !important;
+  box-shadow: inset 4px 4px 0 rgba(255,255,255,.22), inset -4px -4px 0 rgba(0,0,0,.48) !important;
+  transform: none !important;
+}
+.rpg-menu-brand .MuiTypography-overline-root,
+.rpg-menu-active-title span { color: #cbd1c8 !important; letter-spacing: .09em !important; }
+
+.rpg-tab-button {
+  min-height: 60px;
+  border: 4px solid transparent !important;
+  border-radius: 0 !important;
+  color: #e1e4e0 !important;
+  transition: none !important;
+}
+.rpg-tab-button:hover {
+  transform: none !important;
+  background: #596064 !important;
+  border-color: #1b1d1e !important;
+}
+.rpg-tab-button.is-active {
+  color: #fff !important;
+  border-color: #101214 !important;
+  background: #6d7477 !important;
+  box-shadow: inset 4px 4px 0 rgba(255,255,255,.24), inset -4px -4px 0 rgba(0,0,0,.55), inset 7px 0 0 var(--voxel-xp) !important;
+}
+.rpg-tab-button::after { display: none !important; }
+.rpg-tab-glyph {
+  border: 3px solid #101214 !important;
+  background: #42484b !important;
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,.18), inset -2px -2px 0 rgba(0,0,0,.52) !important;
+}
+.rpg-tab-button.is-active .rpg-tab-glyph { background: #5d9339 !important; }
+
+.inventory-slot,
+.inventory-slot-grid > *,
+.hotbar-display-grid > *,
+.armor-card,
+.attribute-card,
+.perk-path,
+.item-detail-panel,
+.item-detail-hero,
+.armor-stage,
+.armor-node,
+.cinematic-pause-panel,
+.MuiDialog-paper,
+.MuiPaper-root {
+  border-radius: 0 !important;
+  clip-path: none !important;
+}
+.inventory-slot,
+.inventory-slot-grid > *,
+.hotbar-display-grid > * {
+  border: 4px solid #151718 !important;
+  background: var(--voxel-slot) !important;
+  box-shadow: inset 4px 4px 0 rgba(255,255,255,.26), inset -4px -4px 0 rgba(0,0,0,.6) !important;
+}
+.inventory-slot:hover { background: var(--voxel-slot-hover) !important; }
+.inventory-slot.is-selected {
+  border-color: #fff !important;
+  box-shadow: inset 4px 4px 0 rgba(255,255,255,.3), inset -4px -4px 0 rgba(0,0,0,.55), 0 0 0 3px #111 !important;
+}
+.inventory-slot img, .item-detail-icon-corner img, .MuiAvatar-img { image-rendering: pixelated; }
+
+.item-detail-panel {
+  background-image: linear-gradient(rgba(30,34,37,.83), rgba(24,28,31,.91)), url('./assets/ui-voxel/item-obsidian-vault.jpg') !important;
+  background-size: cover, 1024px 1024px !important;
+  border: 5px solid #101214 !important;
+  box-shadow: inset 5px 5px 0 rgba(255,255,255,.13), inset -5px -5px 0 rgba(0,0,0,.62), 0 8px 0 rgba(0,0,0,.42) !important;
+}
+.item-detail-hero {
+  background: linear-gradient(rgba(20,24,27,.28), rgba(11,14,16,.72)), url('./assets/ui-voxel/ore-wall.jpg') center/cover !important;
+  border: 4px solid #0f1112 !important;
+}
+.item-detail-hero::before {
+  inset: 8px !important;
+  border: 3px solid rgba(255,255,255,.16) !important;
+  box-shadow: inset 3px 3px 0 rgba(255,255,255,.14), inset -3px -3px 0 rgba(0,0,0,.54) !important;
+}
+.item-detail-hero::after { display: none !important; }
+.item-detail-rarity {
+  color: #f1f4ee !important;
+  background: #3e4548 !important;
+  border: 3px solid #111 !important;
+  font-family: var(--voxel-font) !important;
+  text-shadow: 2px 2px 0 #111 !important;
+}
+
+.armor-stage {
+  background-image: linear-gradient(rgba(30,34,36,.46), rgba(20,23,25,.8)), url('./assets/ui-voxel/armor-iron-workshop.jpg') !important;
+  background-size: cover, 1024px 1024px !important;
+  border: 5px solid #101214 !important;
+  box-shadow: inset 5px 5px 0 rgba(255,255,255,.14), inset -5px -5px 0 rgba(0,0,0,.64), 0 8px 0 rgba(0,0,0,.42) !important;
+}
+.armor-node {
+  background: #596064 !important;
+  border: 4px solid #101214 !important;
+  box-shadow: inset 4px 4px 0 rgba(255,255,255,.2), inset -4px -4px 0 rgba(0,0,0,.58) !important;
+}
+.armor-node::after { height: 4px !important; background: #d6ddd1 !important; box-shadow: 2px 2px 0 #111 !important; }
+
+.perk-path {
+  background-image: linear-gradient(rgba(31,37,42,.85), rgba(22,27,30,.9)), url('./assets/ui-voxel/perks-enchant-grid.jpg') !important;
+  background-size: cover, 1024px 1024px !important;
+  border: 4px solid #101214 !important;
+  box-shadow: inset 4px 4px 0 rgba(255,255,255,.14), inset -4px -4px 0 rgba(0,0,0,.6) !important;
+}
+.perk-node-medallion {
+  border-radius: 0 !important;
+  border: 4px solid #101214 !important;
+  box-shadow: inset 3px 3px 0 rgba(255,255,255,.2), inset -3px -3px 0 rgba(0,0,0,.55) !important;
+}
+.perk-node.is-unlocked .perk-node-medallion { animation: voxelPerkPulse 1.3s steps(2,end) infinite !important; }
+@keyframes voxelPerkPulse { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.35)} }
+
+.cinematic-pause-backdrop { backdrop-filter: none !important; }
+.cinematic-pause-panel {
+  background: linear-gradient(rgba(67,72,74,.94), rgba(42,47,49,.98)), url('./assets/ui-voxel/pause-cobblestone.jpg') center/512px !important;
+  border: 5px solid #0f1112 !important;
+  box-shadow: inset 5px 5px 0 rgba(255,255,255,.18), inset -5px -5px 0 rgba(0,0,0,.62), 0 10px 0 rgba(0,0,0,.42) !important;
+}
+
+.MuiButton-root {
+  min-height: 42px;
+  border: 3px solid #101214 !important;
+  border-radius: 0 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .035em !important;
+  text-shadow: 2px 2px 0 rgba(0,0,0,.72);
+  box-shadow: inset 3px 3px 0 rgba(255,255,255,.22), inset -3px -3px 0 rgba(0,0,0,.52) !important;
+  transition: none !important;
+}
+.MuiButton-containedPrimary {
+  color: #f5f8f2 !important;
+  background: #6aa43f !important;
+}
+.MuiButton-containedPrimary:hover { background: #7db94f !important; }
+.MuiIconButton-root { border-radius: 0 !important; }
+.MuiInputBase-root,
+.MuiOutlinedInput-root {
+  border-radius: 0 !important;
+  background: rgba(24,28,30,.9) !important;
+}
+.MuiLinearProgress-root {
+  height: 12px !important;
+  border: 3px solid #101214;
+  border-radius: 0 !important;
+  background: #34383a !important;
+}
+.MuiLinearProgress-bar { border-radius: 0 !important; background: var(--voxel-xp) !important; }
+
+.game-canvas-wrap canvas,
+.item-inspection-canvas canvas,
+.armor-mannequin-canvas canvas,
+.perk-constellation-canvas canvas {
+  image-rendering: pixelated;
+}
+
+@media (max-width: 620px) {
+  h1, h2, h3, .MuiTypography-h1, .MuiTypography-h2, .MuiTypography-h3 { letter-spacing: .02em !important; }
+  .rpg-menu-header { border-bottom-width: 3px !important; }
+  .rpg-tab-rail { border-right-width: 3px !important; }
+  .rpg-tab-button { border-width: 3px !important; }
+}
+
+/* Lightweight asynchronous menu loading state. Heavy 3D and archive panels are
+   code-split so opening inventory never blocks terrain rendering. */
+.menu-panel-fallback {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  text-align: center;
+  border: 3px solid rgba(255,255,255,.2);
+  background: rgba(18,22,24,.9);
+  box-shadow: inset 0 0 0 3px rgba(0,0,0,.35);
+}
+
+.menu-panel-fallback-cube {
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, #7fb04d 0 48%, #5e8739 48% 52%, #8bc25a 52% 100%);
+  border: 4px solid #1b2318;
+  image-rendering: pixelated;
+  animation: menu-cube-step 900ms steps(4, end) infinite;
+}
+
+@keyframes menu-cube-step {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(90deg); }
+  100% { transform: translateY(0) rotate(180deg); }
+}
+
+/* Keep the paused world readable. A blurred blue background concealed whether
+   terrain had actually mounted and made the missing-ground failure harder to see. */
+.cinematic-pause-backdrop {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+
+/* Terrain visibility release 4.8: the pause layer must never replace the
+   rendered world with a blue-tinted full-screen sheet. */
+.cinematic-pause-backdrop {
+  background: rgba(0, 0, 0, 0.06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Colony simulation and instant inventory shell. The E menu has no entrance
+   animation or expensive blur; inactive station cards are contained so large
+   settlements do not trigger full-page layout and paint work. */
+.rpg-menu-paper,
+.rpg-menu-shell,
+.rpg-menu-body,
+.rpg-menu-content,
+.rpg-content-scroll {
+  animation: none !important;
+  transition: none !important;
+}
+
+.colony-command-panel {
+  min-height: 100%;
+  padding-bottom: 42px;
+  background-image:
+    linear-gradient(rgba(27, 33, 30, .86), rgba(14, 18, 17, .94)),
+    url('./assets/colony-sim-pack/colony-map.jpg');
+  background-size: cover, 1024px 1024px;
+  background-attachment: local;
+}
+
+.colony-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.colony-summary-card,
+.colony-storage-item,
+.colony-station-card {
+  border: 4px solid #101413 !important;
+  border-radius: 0 !important;
+  background: rgba(55, 65, 58, .94) !important;
+  box-shadow: inset 3px 3px 0 rgba(255,255,255,.15), inset -3px -3px 0 rgba(0,0,0,.55) !important;
+}
+
+.colony-summary-card { padding: 12px; }
+.colony-summary-card .MuiTypography-overline { color: #b9d38f; }
+
+.colony-station-card {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  content-visibility: auto;
+  contain-intrinsic-size: 92px;
+}
+
+.colony-station-card.is-selected {
+  outline: 4px solid #d7f28a;
+  outline-offset: -7px;
+}
+
+.colony-station-icon {
+  --job-color: #6f7c72;
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: var(--job-color);
+  border: 4px solid #111;
+  box-shadow: inset 3px 3px 0 rgba(255,255,255,.18), inset -3px -3px 0 rgba(0,0,0,.48);
+}
+
+.colony-station-copy { min-width: 0; }
+.colony-storage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+.colony-storage-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+
+@media (max-width: 760px) {
+  .colony-station-card { grid-template-columns: 52px minmax(0, 1fr); }
+  .colony-station-card > .MuiButton-root { grid-column: 1 / -1; }
+  .colony-station-icon { width: 48px; height: 48px; }
+}
+
+.station-colony_box.tab-colony .rpg-menu-content {
+  background-image: linear-gradient(rgba(18,22,20,.72), rgba(11,14,13,.9)), url('./assets/colony-sim-pack/colony-ledger.jpg');
+  background-size: cover, 1024px 1024px;
+}
+.colony-station-card:nth-of-type(5n+1) { background-image: linear-gradient(rgba(58,63,59,.9), rgba(42,46,43,.94)), url('./assets/colony-sim-pack/guard-post.jpg') !important; background-size: cover, 512px 512px !important; }
+.colony-station-card:nth-of-type(5n+2) { background-image: linear-gradient(rgba(58,63,59,.9), rgba(42,46,43,.94)), url('./assets/colony-sim-pack/miner-hut.jpg') !important; background-size: cover, 512px 512px !important; }
+.colony-station-card:nth-of-type(5n+3) { background-image: linear-gradient(rgba(58,63,59,.9), rgba(42,46,43,.94)), url('./assets/colony-sim-pack/farm-house.jpg') !important; background-size: cover, 512px 512px !important; }
+.inventory-preview-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 210px;
+  display: grid;
+  place-items: center;
+  background: rgba(18, 22, 24, .78);
+  border: 3px solid rgba(255,255,255,.18);
+  image-rendering: pixelated;
+}
+
+/* --------------------------------------------------------------------------
+   Version 9: low-latency inventory shell
+   -------------------------------------------------------------------------- */
+.fast-inventory-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: block;
+  background: rgba(5, 10, 14, .72);
+  contain: strict;
+  isolation: isolate;
+  overscroll-behavior: contain;
+}
+.fast-inventory-shell {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  contain: layout paint style;
+  background: #151b1f !important;
+  background-image: none !important;
+  animation: none !important;
+  transform: translateZ(0);
+}
+.fast-inventory-shell::before,
+.fast-inventory-shell::after {
+  display: none !important;
+  animation: none !important;
+  background-image: none !important;
+}
+.fast-inventory-shell .rpg-menu-header,
+.fast-inventory-shell .rpg-menu-footer,
+.fast-inventory-shell .rpg-tab-rail,
+.fast-inventory-shell .rpg-menu-content {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.fast-inventory-shell .rpg-menu-body,
+.fast-inventory-shell .rpg-menu-content,
+.fast-inventory-shell .rpg-content-scroll {
+  contain: layout paint;
+}
+.fast-inventory-shell .rpg-tab-button::after { display: none !important; }
+.fast-inventory-shell .item-detail-panel,
+.fast-inventory-shell .inventory-grid-panel {
+  box-shadow: inset 0 0 24px rgba(0,0,0,.28) !important;
+}
+.fast-inventory-shell.menu-effects-ready {
+  background:
+    linear-gradient(180deg, rgba(21,27,31,.97), rgba(9,13,16,.99)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 8px) !important;
+}
+.inventory-preview-button {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  color: #dfe8da;
+  cursor: pointer;
+  background: radial-gradient(circle, rgba(110,150,82,.15), rgba(5,9,12,.72) 65%);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  font: inherit;
+}
+.inventory-preview-button small {
+  padding: 5px 9px;
+  border: 2px solid #687168;
+  background: #1a211d;
+  color: #bad78f;
+  font-size: .66rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fast-inventory-shell,
+  .fast-inventory-shell * { animation: none !important; transition: none !important; }
+}
+
+/* Enterprise inventory performance pass: isolate the menu from the paused world,
+   avoid expensive off-screen paint, and show a cheap pixel placeholder while
+   canvas-generated icons are produced in idle-time batches. */
+.fast-inventory-overlay {
+  contain: strict;
+  isolation: isolate;
+}
+.fast-inventory-shell,
+.fast-inventory-shell .rpg-menu-body,
+.fast-inventory-shell .rpg-menu-content,
+.fast-inventory-shell .rpg-content-scroll {
+  contain: layout paint style;
+}
+.fast-inventory-shell .inventory-grid-panel,
+.fast-inventory-shell .item-detail-panel {
+  contain: layout paint style;
+}
+.fast-inventory-shell .inventory-slot {
+  contain: strict;
+  transform: translateZ(0);
+}
+.inventory-icon-placeholder {
+  display: block;
+  max-width: 78%;
+  max-height: 78%;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.13) 0 25%, transparent 25% 50%, rgba(0,0,0,.15) 50% 75%, transparent 75%),
+    #525a5d;
+  background-size: 8px 8px;
+  border: 2px solid rgba(17,20,20,.7);
+  image-rendering: pixelated;
+  opacity: .72;
+}
+.fast-inventory-shell .rpg-content-scroll::before,
+.fast-inventory-shell .item-detail-glow {
+  display: none;
 }

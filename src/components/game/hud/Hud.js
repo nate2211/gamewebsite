@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Box, LinearProgress, Paper, Stack, Typography } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { clearMessage } from "../../../features/world/worldSlice";
@@ -43,6 +43,9 @@ export default function Hud({ worldName }) {
   const toolDurability = useSelector((state) => state.world.toolDurability);
   const health = useSelector((state) => state.world.health);
   const hunger = useSelector((state) => state.world.hunger);
+  const playerDamageAt = useSelector((state) => state.world.playerDamageAt);
+  const playerDamageAmount = useSelector((state) => state.world.playerDamageAmount);
+  const playerDamageFlashUntil = useSelector((state) => state.world.playerDamageFlashUntil);
   const worldTime = useSelector((state) => state.world.worldTime);
   const player = useSelector((state) => state.world.player);
   const seed = useSelector((state) => state.world.seed);
@@ -51,7 +54,12 @@ export default function Hud({ worldName }) {
   const progression = useSelector((state) => state.world.progression);
   const levelUpEvent = useSelector((state) => state.world.levelUpEvent);
   const armor = useSelector((state) => state.world.armor);
+  const weather = useSelector((state) => state.world.weather);
+  const fishing = useSelector((state) => state.world.fishing);
+  const colony = useSelector((state) => state.world.colony);
   const [showLevelUp, setShowLevelUp] = useState(false);
+  const [damageIndicatorVisible, setDamageIndicatorVisible] = useState(false);
+  const [damageFlashStrength, setDamageFlashStrength] = useState(0);
   const selectedItem = hotbar[selectedIndex];
   const selectedDefinition = selectedItem ? getItemDefinition(selectedItem) : null;
   const selectedDurability = selectedItem ? toolDurability[selectedItem] : null;
@@ -73,9 +81,35 @@ export default function Hud({ worldName }) {
     return () => window.clearTimeout(timer);
   }, [levelUpEvent]);
 
+  useEffect(() => {
+    if (!playerDamageAt) return undefined;
+    setDamageIndicatorVisible(true);
+    const timer = window.setTimeout(() => setDamageIndicatorVisible(false), 950);
+    return () => window.clearTimeout(timer);
+  }, [playerDamageAt]);
+
+  useEffect(() => {
+    if (!playerDamageFlashUntil) {
+      setDamageFlashStrength(0);
+      return undefined;
+    }
+    let frame = 0;
+    const tick = () => {
+      const remaining = Math.max(0, playerDamageFlashUntil - Date.now());
+      setDamageFlashStrength(Math.min(1, remaining / 650));
+      if (remaining > 0) frame = window.requestAnimationFrame(tick);
+    };
+    tick();
+    return () => window.cancelAnimationFrame(frame);
+  }, [playerDamageFlashUntil]);
+
   const maxHealth = getMaxHealth(progression);
   const nextLevelXp = experienceForLevel(progression.level);
   const armorCount = Object.values(armor || {}).filter(Boolean).length;
+  const damagePulseStyle = useMemo(() => ({
+    transform: damageIndicatorVisible ? "translateY(-2px) scale(1.05)" : "translateY(0) scale(1)",
+    transition: "transform 120ms ease-out",
+  }), [damageIndicatorVisible]);
 
   return (
     <Box
@@ -86,6 +120,16 @@ export default function Hud({ worldName }) {
         zIndex: 5,
       }}
     >
+      <Box
+        sx={{
+          position: "absolute",
+          inset: 0,
+          opacity: damageFlashStrength * 0.68,
+          background: "radial-gradient(circle at center, rgba(255,72,72,0.08) 0%, rgba(255,72,72,0.18) 32%, rgba(120,0,0,0.48) 100%)",
+          boxShadow: damageFlashStrength > 0 ? "inset 0 0 120px rgba(255,32,32,.65)" : "none",
+          transition: "opacity 90ms linear, box-shadow 90ms linear",
+        }}
+      />
       <Typography
         className="pixel-shadow"
         sx={{ position: "absolute", top: 14, left: 16, fontWeight: 900 }}
@@ -111,7 +155,10 @@ export default function Hud({ worldName }) {
           Hold left click to mine · Left click attacks mobs
         </Typography>
         <Typography variant="caption" display="block">
-          Right click uses/tames/rides, places boats/blocks, or opens stations · E inventory
+          Right click uses/tames/rides, places boats/blocks, or opens stations · E toggles inventory
+        </Typography>
+        <Typography variant="caption" display="block">
+          Hoe + right click tills soil · Seeds plant crops · Fishing rod casts with right click and reels with left click
         </Typography>
         {mount && (
           <Typography variant="caption" display="block" sx={{ color: "#8ce7ff", fontWeight: 900 }}>
@@ -136,6 +183,9 @@ export default function Hud({ worldName }) {
           {isNight ? "Night" : "Day"} · {String(timeHours).padStart(2, "0")}:
           {String(timeMinutes).padStart(2, "0")} · {biome}
         </Typography>
+        <Typography variant="caption" display="block" sx={{ textTransform: "capitalize", color: weather.type === "clear" ? "text.secondary" : weather.type === "snow" ? "#eff8ff" : "#9fccef" }}>
+          Weather: {weather.type || "clear"}{weather.type !== "clear" ? ` · ${Math.round((weather.intensity || 0) * 100)}%` : ""}
+        </Typography>
         <FpsCounter />
       </Paper>
 
@@ -159,6 +209,25 @@ export default function Hud({ worldName }) {
         }}
       />
 
+      {fishing?.active && (
+        <Paper
+          sx={{
+            position: "absolute",
+            left: "50%",
+            top: "55%",
+            transform: "translateX(-50%)",
+            px: 2,
+            py: 0.8,
+            bgcolor: fishing.bite ? "rgba(123,31,22,.94)" : "rgba(5,10,15,.82)",
+            border: fishing.bite ? "3px solid #ffdd55" : "2px solid rgba(255,255,255,.4)",
+          }}
+        >
+          <Typography fontWeight={1000} className="pixel-shadow" sx={{ color: fishing.bite ? "#fff16b" : "#eaf4ff" }}>
+            {fishing.bite ? "BITE! LEFT CLICK NOW" : (fishing.message || "Watch the bobber…")}
+          </Typography>
+        </Paper>
+      )}
+
       {message && (
         <Typography
           className="pixel-shadow"
@@ -175,10 +244,38 @@ export default function Hud({ worldName }) {
         </Typography>
       )}
 
+      {damageIndicatorVisible && playerDamageAmount > 0 && (
+        <Paper
+          sx={{
+            position: "absolute",
+            left: "50%",
+            top: "32%",
+            transform: `translateX(-50%) translateY(${damageFlashStrength > 0 ? 0 : -8}px)`,
+            px: 2.2,
+            py: 0.8,
+            bgcolor: "rgba(105,10,10,.86)",
+            border: "2px solid rgba(255,160,160,.8)",
+          }}
+        >
+          <Typography fontWeight={1000} className="pixel-shadow" sx={{ color: "#ffd6d6", letterSpacing: 1 }}>
+            -{Math.ceil(playerDamageAmount)} HP · TAKING DAMAGE
+          </Typography>
+        </Paper>
+      )}
+
       {showLevelUp && (
         <Paper sx={{ position: "absolute", left: "50%", top: "25%", transform: "translateX(-50%)", px: 3, py: 1.5, bgcolor: "rgba(29,68,20,.92)", border: "2px solid #a8ff75" }}>
           <Typography variant="h4" fontWeight={1000} className="pixel-shadow">LEVEL {progression.level}</Typography>
           <Typography textAlign="center">Spend {progression.unspentPoints} points in Inventory → Stats</Typography>
+        </Paper>
+      )}
+
+      {colony?.stations?.length > 0 && (
+        <Paper sx={{ position: "absolute", left: 16, bottom: 104, width: 240, p: 1, bgcolor: "rgba(5,10,15,.75)", border: "2px solid rgba(132,185,84,.5)" }}>
+          <Typography variant="caption" fontWeight={1000}>Colony · {colony.stations.length} workers</Typography>
+          <Typography variant="caption" display="block" color="text.secondary">
+            Storage {Object.values(colony.storage || {}).reduce((sum, amount) => sum + Number(amount || 0), 0)} items · Guards {colony.totals?.hostilesStopped || 0} · Crops {colony.totals?.cropsHarvested || 0}
+          </Typography>
         </Paper>
       )}
 
@@ -204,7 +301,7 @@ export default function Hud({ worldName }) {
           gap: 2,
         }}
       >
-        <Box>
+        <Box sx={damagePulseStyle}>
           <Typography
             className="pixel-shadow"
             sx={{ color: "#f65b5b", fontSize: { xs: 15, sm: 20 }, letterSpacing: 1 }}

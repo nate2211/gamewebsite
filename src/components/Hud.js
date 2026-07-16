@@ -1,8 +1,33 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, LinearProgress, Paper, Typography } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { clearMessage } from "../features/world/worldSlice";
 import { getItemDefinition } from "../game/blockTypes";
+import { PERFORMANCE_EVENT } from "../game/PerformanceGovernor";
+import { sampleBiome } from "../game/worldGenerator";
+import ItemIcon from "./ItemIcon";
+
+
+function FpsCounter() {
+  const enabled = typeof window !== "undefined" && localStorage.getItem("voxel:showFps") === "true";
+  const [sample, setSample] = useState({ fps: 0, pixelRatio: 1 });
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const onSample = (event) => setSample(event.detail || { fps: 0, pixelRatio: 1 });
+    window.addEventListener(PERFORMANCE_EVENT, onSample);
+    return () => window.removeEventListener(PERFORMANCE_EVENT, onSample);
+  }, [enabled]);
+  if (!enabled) return null;
+  return (
+    <Typography
+      variant="caption"
+      display="block"
+      sx={{ color: sample.fps < 45 ? "#ff9b8f" : "#9dffb1", fontWeight: 900 }}
+    >
+      {sample.fps || "–"} FPS · {sample.pixelRatio.toFixed?.(2) || sample.pixelRatio}× render
+    </Typography>
+  );
+}
 
 function meterSymbols(value, full, empty) {
   const filled = Math.max(0, Math.min(10, Math.ceil(value / 2)));
@@ -18,13 +43,17 @@ export default function Hud({ worldName }) {
   const health = useSelector((state) => state.world.health);
   const hunger = useSelector((state) => state.world.hunger);
   const worldTime = useSelector((state) => state.world.worldTime);
+  const player = useSelector((state) => state.world.player);
+  const seed = useSelector((state) => state.world.seed);
   const message = useSelector((state) => state.world.message);
+  const mount = useSelector((state) => state.world.mount);
   const selectedItem = hotbar[selectedIndex];
   const selectedDefinition = selectedItem ? getItemDefinition(selectedItem) : null;
   const selectedDurability = selectedItem ? toolDurability[selectedItem] : null;
   const timeHours = Math.floor(((worldTime / 1000 + 6) % 24));
   const timeMinutes = Math.floor(((worldTime % 1000) / 1000) * 60);
   const isNight = worldTime >= 13000 && worldTime <= 23000;
+  const biome = sampleBiome(seed, Math.round(player.x), Math.round(player.z)).replaceAll("_", " ");
 
   useEffect(() => {
     if (!message) return undefined;
@@ -66,8 +95,13 @@ export default function Hud({ worldName }) {
           Hold left click to mine · Left click attacks mobs
         </Typography>
         <Typography variant="caption" display="block">
-          Right click places, eats, or opens a workstation · E inventory
+          Right click uses/tames/rides, places boats/blocks, or opens stations · E inventory
         </Typography>
+        {mount && (
+          <Typography variant="caption" display="block" sx={{ color: "#8ce7ff", fontWeight: 900 }}>
+            Mounted: {mount.type.replaceAll("_", " ")} · Shift dismount · Space horse jump
+          </Typography>
+        )}
       </Paper>
 
       <Paper
@@ -84,8 +118,9 @@ export default function Hud({ worldName }) {
       >
         <Typography variant="caption" fontWeight={900}>
           {isNight ? "Night" : "Day"} · {String(timeHours).padStart(2, "0")}:
-          {String(timeMinutes).padStart(2, "0")}
+          {String(timeMinutes).padStart(2, "0")} · {biome}
         </Typography>
+        <FpsCounter />
       </Paper>
 
       <Box
@@ -215,18 +250,7 @@ export default function Hud({ worldName }) {
                 >
                   {index + 1}
                 </Typography>
-                {definition && (
-                  <Typography
-                    sx={{
-                      fontSize: { xs: 19, sm: 28 },
-                      color: definition.color,
-                      lineHeight: 1,
-                      textShadow: "0 2px 0 #000, 0 0 5px rgba(255,255,255,.25)",
-                    }}
-                  >
-                    {definition.icon || "■"}
-                  </Typography>
-                )}
+                {definition && <ItemIcon itemId={itemId} size={36} alt="" />}
                 {definition && definition.maxStack !== 1 && count > 0 && (
                   <Typography
                     variant="caption"

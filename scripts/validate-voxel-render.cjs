@@ -9,14 +9,14 @@ const renderer = read("src/game/world/rendering/WorldRenderer.js");
 const player = read("src/game/player/PlayerController.js");
 const hand = read("src/game/player/FirstPersonViewModel.js");
 
-for (const needle of ["generateChunk", "primeCurrentChunk", "requestIdleCallback", "worldRuntime.applyChunk(chunk)"]) {
+for (const needle of ["generateChunk", "bootstrapRadius", "requestIdleCallback", "worldRuntime.applyChunk(chunk)"]) {
   if (!streamer.includes(needle)) failures.push(`ChunkStreamer missing ${needle}`);
 }
-for (const needle of ["LoadingVoxelPrimer", "snapshot.blockCount === 0", "PRIMER_BLOCKS"]) {
+for (const needle of ["LoadingVoxelPrimer", "!centerChunkMounted", "PRIMER_BLOCKS", "createUnlitBlockMaterials", "frustumCulled={false}"]) {
   if (!renderer.includes(needle)) failures.push(`WorldRenderer missing ${needle}`);
 }
-if (!player.includes("pitchRef.current = -0.16")) failures.push("Player camera does not begin angled toward visible terrain");
-for (const needle of ["baseX = portrait ? 0.43", "-0.76 - twist", "scale={1.08}", "Long square sleeve"]) {
+if (!player.includes("INITIAL_CAMERA_PITCH = -0.72") || !player.includes("pitchRef.current = INITIAL_CAMERA_PITCH")) failures.push("Player camera does not begin angled toward visible terrain");
+for (const needle of ["baseX = portrait ? 0.39", "-0.78 - twist", "scale={0.86}", "Camera-space coordinates"]) {
   if (!hand.includes(needle)) failures.push(`First-person voxel arm missing ${needle}`);
 }
 
@@ -34,4 +34,4 @@ if (failures.length) {
   console.error(failures.join("\n"));
   process.exit(1);
 }
-console.log("Voxel render validation passed: guaranteed spawn geometry, downward startup camera, strongly tilted view-model, and 32 master world textures are present.");
+console.log("Voxel render validation passed: collision-ring bootstrap rendering, direct fallback generation, guaranteed unlit voxel geometry, downward startup camera, strongly tilted view-model, and 32 master world textures are present.");

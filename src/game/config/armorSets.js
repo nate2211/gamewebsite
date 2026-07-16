@@ -1,4 +1,5 @@
 export const ARMOR_SET_BONUSES = {
+  leather: { name: "Trailblazer Hide", description: "+8% movement comfort and 10% less durability loss.", defenseBonus: 1, xpMultiplier: 1.04, durabilityMultiplier: 0.9 },
   copper: { name: "Copper Prospector", description: "+10% mining XP and 8% less armor durability loss.", defenseBonus: 0, xpMultiplier: 1.1, durabilityMultiplier: 0.92 },
   iron: { name: "Iron Guard", description: "+2 armor defense while the full set is equipped.", defenseBonus: 2, xpMultiplier: 1, durabilityMultiplier: 1 },
   gold: { name: "Golden Scholar", description: "+18% experience from all sources.", defenseBonus: 0, xpMultiplier: 1.18, durabilityMultiplier: 1 },

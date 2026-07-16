@@ -2,11 +2,12 @@ import React, { useLayoutEffect, useMemo, useRef, useSyncExternalStore } from "r
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { worldRuntime } from "../core/worldRuntime";
+import { readRuntimeSettings } from "../config/runtimeSettings";
 
 const WAVE_GEOMETRY = new THREE.PlaneGeometry(0.9, 0.24);
 const DIRECTIONS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
-function collectShorelinePositions(snapshot) {
+function collectShorelinePositions(snapshot, cap = 180) {
   const positions = [];
   for (const chunk of snapshot.chunks) {
     const waters = chunk.visibleByType.water || [];
@@ -19,7 +20,7 @@ function collectShorelinePositions(snapshot) {
           break;
         }
       }
-      if (positions.length >= 180) return positions;
+      if (positions.length >= cap) return positions;
     }
   }
   return positions;
@@ -27,7 +28,9 @@ function collectShorelinePositions(snapshot) {
 
 export default function ShoreWaveSystem() {
   const snapshot = useSyncExternalStore(worldRuntime.subscribe, worldRuntime.getSnapshot, worldRuntime.getServerSnapshot);
-  const waves = useMemo(() => collectShorelinePositions(snapshot), [snapshot]);
+  const settings = useMemo(readRuntimeSettings, []);
+  const waveCap = settings.waterQuality === "low" ? 70 : settings.waterQuality === "medium" ? 120 : 180;
+  const waves = useMemo(() => settings.shorelineWaves ? collectShorelinePositions(snapshot, waveCap) : [], [settings.shorelineWaves, snapshot, waveCap]);
   const meshRef = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []);
 

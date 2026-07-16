@@ -1,0 +1,56 @@
+{
+  "name": "Voxel Frontier Enterprise Character Pack",
+  "version": 1,
+  "license": "Original project assets generated for this release",
+  "maps": {
+    "frontier_player": {
+      "diffuse": "maps-2k/frontier_player_diffuse_2k.png",
+      "normal": "maps-2k/frontier_player_normal_2k.png",
+      "orm": "maps-2k/frontier_player_orm_2k.png"
+    },
+    "colony_guard": {
+      "diffuse": "maps-2k/colony_guard_diffuse_2k.png",
+      "normal": "maps-2k/colony_guard_normal_2k.png",
+      "orm": "maps-2k/colony_guard_orm_2k.png"
+    },
+    "colony_worker": {
+      "diffuse": "maps-2k/colony_worker_diffuse_2k.png",
+      "normal": "maps-2k/colony_worker_normal_2k.png",
+      "orm": "maps-2k/colony_worker_orm_2k.png"
+    },
+    "dire_wolf": {
+      "diffuse": "maps-2k/dire_wolf_diffuse_2k.png",
+      "normal": "maps-2k/dire_wolf_normal_2k.png",
+      "orm": "maps-2k/dire_wolf_orm_2k.png"
+    },
+    "iron_golem": {
+      "diffuse": "maps-2k/iron_golem_diffuse_2k.png",
+      "normal": "maps-2k/iron_golem_normal_2k.png",
+      "orm": "maps-2k/iron_golem_orm_2k.png"
+    },
+    "undead_raider": {
+      "diffuse": "maps-2k/undead_raider_diffuse_2k.png",
+      "normal": "maps-2k/undead_raider_normal_2k.png",
+      "orm": "maps-2k/undead_raider_orm_2k.png"
+    },
+    "frontier_livestock": {
+      "diffuse": "maps-2k/frontier_livestock_diffuse_2k.png",
+      "normal": "maps-2k/frontier_livestock_normal_2k.png",
+      "orm": "maps-2k/frontier_livestock_orm_2k.png"
+    }
+  },
+  "models": {
+    "frontier_player": "models-gltf/frontier_player.gltf",
+    "colony_guard": "models-gltf/colony_guard.gltf",
+    "colony_worker": "models-gltf/colony_worker.gltf",
+    "dire_wolf": "models-gltf/dire_wolf.gltf",
+    "iron_golem": "models-gltf/iron_golem.gltf",
+    "undead_raider": "models-gltf/undead_raider.gltf",
+    "frontier_livestock": "models-gltf/frontier_livestock.gltf"
+  },
+  "notes": [
+    "2K source maps are intentionally not loaded by default in the browser build.",
+    "Runtime procedural models use the same palettes and animation vocabulary.",
+    "Downsample/compress maps before shipping them to constrained devices."
+  ]
+}

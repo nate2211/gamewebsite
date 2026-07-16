@@ -1,35 +1,33 @@
 {
-  "name": "Voxel Frontier Enterprise Engine Streaming",
-  "version": "11.0.0",
-  "releaseDate": "2026-07-15",
+  "name": "Voxel Frontier Frontend Multiplayer Enterprise Edition",
+  "version": "12.0.0",
+  "releaseDate": "2026-07-16",
+  "worldSaveVersion": 15,
   "terrainSaveCompatibility": 14,
-  "renderDistanceChunks": {
-    "min": 2,
-    "max": 16,
-    "default": 8
+  "multiplayer": {
+    "transport": "WebRTC data channels",
+    "signaling": "URL fragments and same-origin BroadcastChannel",
+    "customBackendRequired": false,
+    "maxPlayersPerBrowserHost": 8,
+    "persistentGuestState": true,
+    "hostAuthoritativeSharedWorld": true,
+    "optionalPublicStun": true,
+    "turnIncluded": false
   },
-  "chunkWorkerConcurrency": {
-    "min": 1,
-    "max": 8,
-    "default": 4
+  "art": {
+    "direction": "original voxel sandbox and classic low-poly fantasy RPG blend",
+    "animatedGltfSourceModels": 7,
+    "sourceMaps2K": 21,
+    "runtimeRemotePlayerRig": true,
+    "repositionedFirstPersonHand": true
   },
-  "features": [
-    "engine and world streaming settings",
-    "parallel browser worker chunk generation",
-    "pause-independent world streaming",
-    "one-way startup terrain readiness",
-    "deterministic unloaded-boundary collision support",
-    "absolute anti-void player recovery",
-    "render-radius culling for preload and unload-margin chunks",
-    "version 10 enterprise inventory, terrain, grass, seeds, crops, and harvesting preserved"
-  ],
-  "validation": {
-    "npmRunValidate": "passed",
-    "npmRunValidateLegacy": "passed",
-    "ciProductionBuild": "passed",
-    "runtimeSafetyProbe": "passed"
+  "ai": {
+    "sensoryMemory": true,
+    "activityPlanning": true,
+    "terrainAwareSteering": true,
+    "socialAndSurvivalDrives": true,
+    "contextualActionAnimations": true
   },
-  "productionMainBundle": "main.8743191b.js",
-  "productionMainBundleSha256": "a21de38cf3dbb6e3b0f1b1e7c76ffe2dce88a46af4f24995a1e833a8c4fc2f9b",
-  "nodeModulesIncluded": false
+  "nodeModulesIncluded": false,
+  "splitPartTarget": "150 MiB"
 }

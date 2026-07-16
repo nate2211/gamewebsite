@@ -1,12 +1,14 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { getInitialPixelRatio, getPerformanceProfile } from "../config/performanceProfile";
+import { readRuntimeSettings } from "../config/runtimeSettings";
 
 export const PERFORMANCE_EVENT = "voxel:performance-sample";
 
 export default function PerformanceGovernor({ enabled = true }) {
   const { gl } = useThree();
   const profileRef = useRef(getPerformanceProfile());
+  const dynamicResolutionRef = useRef(readRuntimeSettings().dynamicResolution !== false);
   const pixelRatioRef = useRef(getInitialPixelRatio(profileRef.current));
   const accumulatorRef = useRef({ elapsed: 0, frames: 0, lowWindows: 0, highWindows: 0 });
 
@@ -15,7 +17,7 @@ export default function PerformanceGovernor({ enabled = true }) {
   }, [gl]);
 
   useFrame((_, rawDelta) => {
-    if (!enabled) return;
+    if (!enabled || !dynamicResolutionRef.current) return;
     const delta = Math.min(rawDelta, 0.1);
     const sample = accumulatorRef.current;
     sample.elapsed += delta;

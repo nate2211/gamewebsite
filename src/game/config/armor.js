@@ -1,3 +1,5 @@
+import { getArmorSetBonus } from "./armorSets";
+
 export const ARMOR_SLOTS = ["helmet", "chestplate", "leggings", "boots"];
 
 export const EMPTY_ARMOR = Object.freeze({
@@ -8,10 +10,11 @@ export const EMPTY_ARMOR = Object.freeze({
 });
 
 export function getArmorDefense(armor, itemTypes) {
-  return ARMOR_SLOTS.reduce((sum, slot) => {
+  const base = ARMOR_SLOTS.reduce((sum, slot) => {
     const itemId = armor?.[slot];
     return sum + Math.max(0, itemTypes[itemId]?.defense || 0);
   }, 0);
+  return base + Math.max(0, getArmorSetBonus(armor, itemTypes)?.defenseBonus || 0);
 }
 
 export function reduceDamageWithArmor(rawDamage, defense) {

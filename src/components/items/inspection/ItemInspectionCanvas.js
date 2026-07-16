@@ -1,8 +1,20 @@
-import React, { memo, useMemo, useRef } from "react";
+import React, { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { BLOCK_TYPES, getItemDefinition } from "../../../game/config/blockTypes";
 import { getBlockMaterials } from "../../../game/world/rendering/voxelTextures";
+
+
+function PreviewTicker({ fps = 20 }) {
+  const { invalidate } = useThree();
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") invalidate();
+    }, Math.max(34, Math.round(1000 / fps)));
+    return () => window.clearInterval(interval);
+  }, [fps, invalidate]);
+  return null;
+}
 
 function Material({ color, metalness = 0.25, roughness = 0.55, emissive = "#000000" }) {
   return <meshStandardMaterial color={color} metalness={metalness} roughness={roughness} emissive={emissive} emissiveIntensity={0.18} />;
@@ -130,7 +142,8 @@ function ItemInspectionCanvas({ itemId }) {
   if (!itemId) return <div className="item-inspection-empty">Select an item</div>;
   return (
     <div className="item-inspection-canvas" aria-label={`3D preview of ${getItemDefinition(itemId).name}`}>
-      <Canvas camera={{ position: [0, 0.25, 4.1], fov: 38, near: 0.1, far: 20 }} dpr={[1, 1.4]} gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}>
+      <Canvas frameloop="demand" camera={{ position: [0, 0.25, 4.1], fov: 38, near: 0.1, far: 20 }} dpr={[0.85, 1.1]} gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}>
+        <PreviewTicker fps={20} />
         <Scene itemId={itemId} />
       </Canvas>
     </div>

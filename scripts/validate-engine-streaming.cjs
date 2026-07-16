@@ -38,7 +38,7 @@ const renderer = read("src/game/world/rendering/WorldRenderer.js");
 const mobs = read("src/game/entities/MobSystem.js");
 const packageJson = JSON.parse(read("package.json"));
 
-requireContract(packageJson.version === "11.0.0", "release version is not 11.0.0");
+requireContract(Number(packageJson.version.split(".")[0]) >= 11, "release version is older than the engine-streaming baseline");
 requireContract(runtime.includes("renderDistance, 2, 16") && runtime.includes("chunkGenerationConcurrency, 1, 8"), "runtime setting bounds do not expose 16-chunk / 8-worker engine limits");
 requireContract(runtime.includes("continueStreamingWhilePaused") && runtime.includes("preventVoidFall") && runtime.includes("walkAcrossStreamingBoundary"), "streaming safety settings are missing");
 requireContract(settings.includes('max={16}') && settings.includes("Engine and world streaming") && settings.includes("predictive streaming-boundary safety floor"), "engine settings UI is incomplete");

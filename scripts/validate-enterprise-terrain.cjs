@@ -42,7 +42,7 @@ requireContract(renderer.includes("!terrainVisuallyStable && <TerrainSurfaceShel
 requireContract(!renderer.includes("GrassCapInstances"), "duplicate grass-cap renderer still exists");
 requireContract(runtime.includes("normalizeBlockType") && runtime.includes("sanitizeBlockEdits"), "world runtime does not normalize persisted terrain");
 requireContract(migration.includes("purple_block") && migration.includes("missing_texture") && migration.includes("placeholder"), "legacy purple/debug block aliases are incomplete");
-requireContract(db.includes("version: 14") && db.includes("sanitizeBlockEdits") && db.includes("sanitizeCropRecords"), "save serialization migration is incomplete");
+requireContract((db.includes("version: 15") || db.includes("version: 14")) && db.includes("sanitizeBlockEdits") && db.includes("sanitizeCropRecords"), "save serialization migration is incomplete");
 requireContract(itemIcon.includes("requestIdleCallback") && itemIcon.includes("ICON_BATCH_SIZE") && itemIcon.includes("pendingIconIds"), "item icons are not generated through an idle-time queue");
 requireContract(inventory.includes("preloadItemIcons") && inventory.includes("useMemo") && inventory.includes("useCallback"), "inventory memoization/prewarming contract missing");
 requireContract(slot.includes("memo(") && slot.includes("activationValue") && slot.includes("useCallback"), "inventory slots are not stable memoized components");

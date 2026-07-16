@@ -1,23 +1,11 @@
-# Voxel Frontier 10.0.0 release validation
+# Release validation — 12.0.0
 
-Release date: 2026-07-15
+Validated on July 16, 2026.
 
-## Completed checks
-
-- `npm run validate`: passed all colony, colony-defense, grass/farming, and enterprise-terrain contracts.
-- `npm run validate:legacy`: passed all project, viewport, cinematic, blockstyle, voxel-render, loading, create-world, persistence, smooth-render, rendering-issue, and world-visibility regressions.
-- `CI=true GENERATE_SOURCEMAP=false npm run build`: compiled successfully and produced the deployable `build/` directory.
-- Package lock uses the public npm registry and contains no internal registry artifact URLs.
-- Final source archive intentionally excludes `node_modules`; install reproducibly with `npm ci`.
-- Source-master terrain atlases remain outside `src/` and `public/`, so they are not loaded by the browser runtime.
-
-## Principal release contracts
-
-- Inventory icons are generated through a bounded idle-time queue and cached.
-- Inventory slots are memoized with stable activation handlers and CSS paint/layout containment.
-- Grass block top faces are authoritative and static; duplicate permanent cap geometry is removed.
-- Startup terrain fallback geometry unmounts after primary terrain stabilizes.
-- Legacy purple/debug/missing-texture block edits are normalized or discarded during world migration.
-- Grass, flowers, wheat, and vines use voxel geometry.
-- Seed planting, persisted crop stages, timed growth, mature harvesting, and seed drops are active.
-- Terrain/save compatibility version is 14; package release version is 10.0.0.
+- `npm run build`: passed; optimized CRA production build generated.
+- `npm run validate`: passed; colony, defense, farming, terrain, streaming, multiplayer, AI, model, and source-map contracts verified.
+- `npm run validate:legacy`: passed; viewport, rendering, startup, persistence, and world-visibility regression checks verified.
+- Animated source models: 7 valid glTF 2.0 files, each with idle, walk, run, attack, mine, build, hurt, and death clips.
+- Source materials: 21 original 2048×2048 diffuse, normal, and ORM PNG maps.
+- Multiplayer: host/join invite flow, same-origin answer bridge, manual fallback, guest persistence, lobby chat, remote avatars, and world reconciliation are present.
+- Packaging policy: `node_modules`, `.git`, `.idea`, and prior release output are excluded. Source, lockfile, production build, documentation, tests, generated source assets, and packaging scripts are included.

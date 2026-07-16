@@ -13,7 +13,7 @@ const game=read('src/pages/GamePage.js');
 requireText(generator,'COASTAL_FLOOD_MARGIN = 18','coastal flood margin missing');
 requireText(generator,'buildConnectedCoastalFloodMask','coastal flood helper not integrated');
 requireText(generator,'if (seaConnected)','sea-connected columns are not filled');
-requireText(generator,'TERRAIN_GENERATOR_VERSION = 11','terrain generator cache version missing');
+requireText(generator,'TERRAIN_GENERATOR_VERSION = 14','terrain generator cache version missing');
 requireText(flood,'profile.height >= seaLevel','sea-level barriers are not respected');
 requireText(flood,'profile?.biome === "ocean"','ocean flood seeds missing');
 requireText(liquid,'pressurized','pressure-based basin fill missing');

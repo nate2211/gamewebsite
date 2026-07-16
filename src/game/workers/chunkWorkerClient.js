@@ -45,7 +45,7 @@ export default class ChunkWorkerClient {
         // A worker can occasionally fail without dispatching an error event.
         // Fall back to main-thread generation instead of leaving startup stuck.
         if (this.pending.has(requestId)) this.fallbackAll();
-      }, 6000);
+      }, 1800);
       this.pending.set(requestId, { resolve, reject, seed, cx, cz, timer });
       try {
         this.worker.postMessage({ requestId, seed, cx, cz });

@@ -6,11 +6,11 @@ import { setWorldTime } from "../../features/world/worldSlice";
 import { WORLD_START_TIME } from "../world/generation/worldGenerator";
 import { getPerformanceProfile } from "../config/performanceProfile";
 
-const DAY_COLOR = new THREE.Color("#7ec9ff");
-const SUNSET_COLOR = new THREE.Color("#e88b65");
-const NIGHT_COLOR = new THREE.Color("#071225");
-const DAY_GROUND = new THREE.Color("#31441f");
-const NIGHT_GROUND = new THREE.Color("#080b12");
+const DAY_COLOR = new THREE.Color("#78c7f2");
+const SUNSET_COLOR = new THREE.Color("#ef9b5e");
+const NIGHT_COLOR = new THREE.Color("#101831");
+const DAY_GROUND = new THREE.Color("#567b35");
+const NIGHT_GROUND = new THREE.Color("#0a0d16");
 
 export default function DayNightCycle({ enabled = true }) {
   const dispatch = useDispatch();
@@ -30,7 +30,7 @@ export default function DayNightCycle({ enabled = true }) {
   }, [storedTime]);
 
   useEffect(() => {
-    scene.fog = new THREE.Fog("#7ec9ff", Math.max(18, profile.cameraFar * 0.28), profile.cameraFar * 0.92);
+    scene.fog = new THREE.Fog("#78c7f2", Math.max(20, profile.cameraFar * 0.32), profile.cameraFar * 0.96);
     return () => {
       scene.fog = null;
     };
@@ -57,11 +57,11 @@ export default function DayNightCycle({ enabled = true }) {
 
     if (sunRef.current) {
       sunRef.current.position.set(Math.cos(sunAngle) * 42, Math.sin(sunAngle) * 48, 18);
-      sunRef.current.intensity = 0.08 + daylight * 1.65;
+      sunRef.current.intensity = 0.16 + daylight * 1.62;
       sunRef.current.color.set(daylight < 0.4 ? "#ffb17a" : "#fff4d6");
     }
     if (hemisphereRef.current) {
-      hemisphereRef.current.intensity = 0.12 + daylight * 0.9;
+      hemisphereRef.current.intensity = 0.24 + daylight * 0.9;
       hemisphereRef.current.color.copy(backgroundColor);
       hemisphereRef.current.groundColor.copy(groundColor);
     }
@@ -78,7 +78,7 @@ export default function DayNightCycle({ enabled = true }) {
     <>
       <hemisphereLight ref={hemisphereRef} intensity={0.8} color="#d8efff" groundColor="#26351c" />
       <directionalLight ref={sunRef} position={[30, 45, 20]} intensity={1.4} />
-      <ambientLight intensity={0.06} />
+      <ambientLight intensity={0.14} />
     </>
   );
 }

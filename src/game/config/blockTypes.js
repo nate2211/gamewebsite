@@ -22,6 +22,11 @@ const block = ({
   light = false,
   dropChance = 1,
   bonusDrops = [],
+  plantType = null,
+  growthStage = null,
+  growthMs = null,
+  seedItem = null,
+  harvestDrop = null,
 }) => ({
   id,
   name,
@@ -37,6 +42,11 @@ const block = ({
   light,
   dropChance,
   bonusDrops,
+  plantType,
+  growthStage,
+  growthMs,
+  seedItem,
+  harvestDrop,
 });
 
 export const BLOCK_TYPES = {
@@ -50,9 +60,10 @@ export const BLOCK_TYPES = {
     drop: null,
     placeable: false,
   }),
-  grass: block({ id: "grass", name: "Grass Block", color: "#67a93b", hardness: 0.65, preferredTool: "shovel", drop: "dirt", bonusDrops: [{ item: "wheat", chance: 0.08 }] }),
+  grass: block({ id: "grass", name: "Grass Block", color: "#67a93b", hardness: 0.65, preferredTool: "shovel", drop: "dirt", bonusDrops: [{ item: "grass_seeds", chance: 0.28 }, { item: "wheat_seeds", chance: 0.1 }] }),
   frozen_grass: block({ id: "frozen_grass", name: "Frozen Grass", color: "#8fb7a5", hardness: 0.8, preferredTool: "shovel", drop: "dirt" }),
-  snow: block({ id: "snow", name: "Snow Block", color: "#edf7ff", hardness: 0.35, preferredTool: "shovel" }),
+  snow: block({ id: "snow", name: "Snow Block", color: "#edf7ff", hardness: 0.35, preferredTool: "shovel", solid: false }),
+  snow_layer: block({ id: "snow_layer", name: "Snow Layer", color: "#f4fbff", hardness: 0.08, preferredTool: "shovel", drop: null, placeable: false, transparent: true, solid: false }),
   ice: block({ id: "ice", name: "Ice", color: "#8fd6ef", hardness: 0.55, preferredTool: "pickaxe", transparent: true, drop: null }),
   dirt: block({ id: "dirt", name: "Dirt", color: "#795334", hardness: 0.6, preferredTool: "shovel" }),
   stone: block({ id: "stone", name: "Stone", color: "#7b8084", hardness: 1.8, preferredTool: "pickaxe", requiredTier: 1, drop: "cobblestone", placeable: false }),
@@ -65,9 +76,10 @@ export const BLOCK_TYPES = {
   planks: block({ id: "planks", name: "Oak Planks", color: "#b78348", hardness: 1.35, preferredTool: "axe" }),
   spruce_planks: block({ id: "spruce_planks", name: "Spruce Planks", color: "#755233", hardness: 1.35, preferredTool: "axe" }),
   jungle_planks: block({ id: "jungle_planks", name: "Jungle Planks", color: "#bd8050", hardness: 1.35, preferredTool: "axe" }),
-  leaves: block({ id: "leaves", name: "Oak Leaves", color: "#3f7f3a", hardness: 0.28, preferredTool: "shears", drop: "sapling", transparent: true, dropChance: 0.18, bonusDrops: [{ item: "apple", chance: 0.05 }] }),
-  spruce_leaves: block({ id: "spruce_leaves", name: "Spruce Leaves", color: "#285e44", hardness: 0.3, preferredTool: "shears", drop: "spruce_sapling", transparent: true, dropChance: 0.16 }),
-  jungle_leaves: block({ id: "jungle_leaves", name: "Jungle Leaves", color: "#2f8b36", hardness: 0.3, preferredTool: "shears", drop: "jungle_sapling", transparent: true, dropChance: 0.15 }),
+  leaves: block({ id: "leaves", name: "Oak Leaves", color: "#3f7f3a", hardness: 0.28, preferredTool: "shears", drop: "sapling", transparent: true, dropChance: 0.18, solid: false, bonusDrops: [{ item: "apple", chance: 0.05 }, { item: "wheat_seeds", chance: 0.06 }] }),
+  spruce_leaves: block({ id: "spruce_leaves", name: "Spruce Leaves", color: "#285e44", hardness: 0.3, preferredTool: "shears", drop: "spruce_sapling", transparent: true, dropChance: 0.16, solid: false, bonusDrops: [{ item: "wheat_seeds", chance: 0.04 }] }),
+  jungle_leaves: block({ id: "jungle_leaves", name: "Jungle Leaves", color: "#2f8b36", hardness: 0.3, preferredTool: "shears", drop: "jungle_sapling", transparent: true, dropChance: 0.15, solid: false, bonusDrops: [{ item: "wheat_seeds", chance: 0.05 }] }),
+  vine: block({ id: "vine", name: "Jungle Vine", color: "#2f7f35", hardness: 0.08, preferredTool: "shears", drop: "vine", placeable: true, transparent: true, solid: false }),
   coal_ore: block({ id: "coal_ore", name: "Coal Ore", color: "#41464b", hardness: 2.4, preferredTool: "pickaxe", requiredTier: 1, drop: "coal", placeable: false }),
   copper_ore: block({ id: "copper_ore", name: "Copper Ore", color: "#a76543", hardness: 2.7, preferredTool: "pickaxe", requiredTier: 1, drop: "raw_copper", placeable: false }),
   iron_ore: block({ id: "iron_ore", name: "Iron Ore", color: "#9b755e", hardness: 3, preferredTool: "pickaxe", requiredTier: 2, drop: "raw_iron", placeable: false }),
@@ -81,6 +93,25 @@ export const BLOCK_TYPES = {
   water: block({ id: "water", name: "Water", color: "#3e8fd1", hardness: Infinity, drop: null, placeable: false, transparent: true, solid: false }),
   seagrass: block({ id: "seagrass", name: "Seagrass", color: "#2f9f69", hardness: 0.12, preferredTool: "shears", drop: "seagrass", transparent: true, solid: false }),
   kelp: block({ id: "kelp", name: "Kelp", color: "#25794e", hardness: 0.18, preferredTool: "shears", drop: "kelp", transparent: true, solid: false }),
+  farmland: block({ id: "farmland", name: "Farmland", color: "#604326", hardness: 0.6, preferredTool: "shovel", drop: "dirt" }),
+  meadow_grass_0: block({ id: "meadow_grass_0", name: "Grass Sprout", color: "#4f9634", hardness: 0.04, drop: "grass_seeds", placeable: false, transparent: true, solid: false, plantType: "meadow_grass", growthStage: 0, growthMs: 8500, seedItem: "grass_seeds" }),
+  meadow_grass_1: block({ id: "meadow_grass_1", name: "Growing Grass", color: "#5eaa3a", hardness: 0.05, drop: "grass_seeds", placeable: false, transparent: true, solid: false, plantType: "meadow_grass", growthStage: 1, growthMs: 10500, seedItem: "grass_seeds" }),
+  meadow_grass_2: block({ id: "meadow_grass_2", name: "Mature Meadow Grass", color: "#6db640", hardness: 0.06, drop: "grass_clippings", placeable: false, transparent: true, solid: false, plantType: "meadow_grass", growthStage: 2, seedItem: "grass_seeds", harvestDrop: "grass_clippings", bonusDrops: [{ item: "grass_seeds", chance: 1 }, { item: "wheat_seeds", chance: 0.22 }] }),
+  yellow_flower_0: block({ id: "yellow_flower_0", name: "Flower Sprout", color: "#62a83a", hardness: 0.04, drop: "flower_seeds", placeable: false, transparent: true, solid: false, plantType: "yellow_flower", growthStage: 0, growthMs: 12000, seedItem: "flower_seeds" }),
+  yellow_flower_1: block({ id: "yellow_flower_1", name: "Flower Bud", color: "#93b63f", hardness: 0.05, drop: "flower_seeds", placeable: false, transparent: true, solid: false, plantType: "yellow_flower", growthStage: 1, growthMs: 15000, seedItem: "flower_seeds" }),
+  yellow_flower_2: block({ id: "yellow_flower_2", name: "Sun Meadow Flower", color: "#efc84a", hardness: 0.05, drop: "yellow_flower", placeable: false, transparent: true, solid: false, plantType: "yellow_flower", growthStage: 2, seedItem: "flower_seeds", harvestDrop: "yellow_flower", bonusDrops: [{ item: "flower_seeds", chance: 1 }, { item: "flower_seeds", chance: 0.35 }] }),
+  tall_grass: block({ id: "tall_grass", name: "Legacy Tall Grass", color: "#69ad3d", hardness: 0.06, drop: "grass_clippings", placeable: false, transparent: true, solid: false, plantType: "meadow_grass", growthStage: 2, seedItem: "grass_seeds", bonusDrops: [{ item: "grass_seeds", chance: 1 }, { item: "wheat_seeds", chance: 0.22 }] }),
+  wildflower: block({ id: "wildflower", name: "Legacy Meadow Flower", color: "#efc84a", hardness: 0.05, drop: "yellow_flower", placeable: false, transparent: true, solid: false, plantType: "yellow_flower", growthStage: 2, seedItem: "flower_seeds", bonusDrops: [{ item: "flower_seeds", chance: 1 }] }),
+  reeds: block({ id: "reeds", name: "Reeds", color: "#7eaa52", hardness: 0.08, drop: "reeds", placeable: false, transparent: true, solid: false }),
+  wheat_crop_0: block({ id: "wheat_crop_0", name: "Sprouting Wheat", color: "#78a842", hardness: 0.08, drop: "wheat_seeds", placeable: false, transparent: true, solid: false, plantType: "wheat", growthStage: 0, growthMs: 12000, seedItem: "wheat_seeds" }),
+  wheat_crop_1: block({ id: "wheat_crop_1", name: "Young Wheat", color: "#89b84a", hardness: 0.08, drop: "wheat_seeds", placeable: false, transparent: true, solid: false, plantType: "wheat", growthStage: 1, growthMs: 12000, seedItem: "wheat_seeds" }),
+  wheat_crop_2: block({ id: "wheat_crop_2", name: "Growing Wheat", color: "#b5b84f", hardness: 0.08, drop: "wheat_seeds", placeable: false, transparent: true, solid: false, plantType: "wheat", growthStage: 2, growthMs: 12000, seedItem: "wheat_seeds" }),
+  wheat_crop_3: block({ id: "wheat_crop_3", name: "Mature Wheat", color: "#d9b54a", hardness: 0.08, drop: "wheat", placeable: false, transparent: true, solid: false, plantType: "wheat", growthStage: 3, seedItem: "wheat_seeds", harvestDrop: "wheat", bonusDrops: [{ item: "wheat_seeds", chance: 1 }] }),
+  guard_colony_box: block({ id: "guard_colony_box", name: "Guard Post Box", color: "#9e443d", hardness: 1.7, preferredTool: "axe", station: "colony_box" }),
+  miner_colony_box: block({ id: "miner_colony_box", name: "Miner Hut Box", color: "#676f77", hardness: 1.7, preferredTool: "axe", station: "colony_box" }),
+  farm_colony_box: block({ id: "farm_colony_box", name: "Farm House Box", color: "#6f943f", hardness: 1.7, preferredTool: "axe", station: "colony_box" }),
+  animal_colony_box: block({ id: "animal_colony_box", name: "Animal Keeper Box", color: "#9a6b48", hardness: 1.7, preferredTool: "axe", station: "colony_box" }),
+  fishing_colony_box: block({ id: "fishing_colony_box", name: "Fishing Hut Box", color: "#3f729e", hardness: 1.7, preferredTool: "axe", station: "colony_box" }),
   torch: block({
     id: "torch",
     name: "Torch",
@@ -143,6 +174,10 @@ export const ITEM_TYPES = {
   sapling: material("Oak Sapling", "♣", "#5aa447"),
   spruce_sapling: material("Spruce Sapling", "♣", "#39715a"),
   jungle_sapling: material("Jungle Sapling", "♣", "#3f9843"),
+  grass_seeds: material("Grass Seeds", "·", "#6cad3f", { category: "seed", plantType: "meadow_grass" }),
+  flower_seeds: material("Flower Seeds", "·", "#d5ae39", { category: "seed", plantType: "yellow_flower" }),
+  grass_clippings: material("Grass Clippings", "≋", "#5da63a"),
+  yellow_flower: material("Sun Meadow Flower", "✿", "#efc84a"),
   sticks: material("Sticks", "╱", "#9d6c3d"),
   coal: material("Coal", "●", "#262a2e", { fuel: 8 }),
   charcoal: material("Charcoal", "●", "#3b3430", { fuel: 8 }),
@@ -157,7 +192,19 @@ export const ITEM_TYPES = {
   diamond: material("Diamond", "◆", "#49dedc"),
   wool: material("Wool", "▣", "#eeeeee"),
   leather: material("Leather", "◒", "#8a4f2a"),
+  feather: material("Feather", "⌁", "#f1efe6"),
+  egg: material("Egg", "●", "#eee5c8", { category: "throwable", maxStack: 16, throwable: "egg" }),
+  wheat_seeds: material("Wheat Seeds", "·", "#9da54d", { category: "seed" }),
+  wildflower: material("Wildflower", "✿", "#d7a1dc"),
+  reeds: material("Reeds", "≀", "#7eaa52"),
   bone: material("Bone", "╱", "#eee7cf"),
+  string: material("String", "≈", "#e8e0d4"),
+  spider_eye: material("Spider Eye", "◉", "#a53030"),
+  arrow_bundle: material("Arrow Bundle", "➶", "#d1d5d8"),
+  bow_fragment: material("Bow Fragment", ")", "#8d6543"),
+  iron_nugget: material("Iron Nugget", "•", "#c7cdd1"),
+  ancient_coin: material("Ancient Coin", "◌", "#e2be59"),
+  treasure_map_fragment: material("Treasure Map Fragment", "⌘", "#d3c7a1"),
   slime_ball: material("Slime Ball", "●", "#63c751"),
   apple: material("Apple", "●", "#d83b36", { category: "food", food: 4, tameFood: ["horse"] }),
   wheat: material("Wheat", "≋", "#d9b54a", { tameFood: ["horse"] }),
@@ -175,6 +222,17 @@ export const ITEM_TYPES = {
   cooked_porkchop: material("Cooked Porkchop", "◖", "#9d5e4b", { category: "food", food: 7 }),
   cooked_chicken: material("Cooked Chicken", "◖", "#a86d4c", { category: "food", food: 6 }),
   rotten_flesh: material("Rotten Flesh", "◖", "#6d7b38", { category: "food", food: 1 }),
+
+  fishing_rod: tool("Fishing Rod", "⌁", "fishing_rod", 1, 1, 96, 1, "#8b673f"),
+  leather_pickaxe: tool("Leather-Bound Pickaxe", "⛏", "pickaxe", 1, 1.8, 44, 2, "#8a4f2a"),
+  leather_axe: tool("Leather-Bound Axe", "🪓", "axe", 1, 2.05, 44, 3, "#8a4f2a"),
+  leather_shovel: tool("Leather-Bound Shovel", "♠", "shovel", 1, 2.25, 44, 2, "#8a4f2a"),
+  leather_sword: tool("Leather-Bound Sword", "†", "sword", 1, 1, 44, 3, "#8a4f2a"),
+  leather_hoe: tool("Leather-Bound Hoe", "⌝", "hoe", 1, 1.6, 44, 1, "#8a4f2a"),
+  wooden_hoe: tool("Wooden Hoe", "⌝", "hoe", 1, 1.8, 59, 1, "#9f7046"),
+  stone_hoe: tool("Stone Hoe", "⌝", "hoe", 2, 3.3, 131, 2, "#777d82"),
+  iron_hoe: tool("Iron Hoe", "⌝", "hoe", 3, 5.4, 250, 3, "#d0d5d8"),
+  diamond_hoe: tool("Diamond Hoe", "⌝", "hoe", 4, 7.2, 1561, 4, "#49dedc"),
 
   wooden_pickaxe: tool("Wooden Pickaxe", "⛏", "pickaxe", 1, 2.2, 59, 2, "#9f7046"),
   stone_pickaxe: tool("Stone Pickaxe", "⛏", "pickaxe", 2, 4.6, 131, 3, "#777d82"),
@@ -197,6 +255,11 @@ export const ITEM_TYPES = {
   iron_sword: tool("Iron Sword", "†", "sword", 3, 1, 250, 7, "#d0d5d8"),
   golden_sword: tool("Golden Sword", "†", "sword", 3, 1, 80, 6, "#f3d34d"),
   diamond_sword: tool("Diamond Sword", "†", "sword", 4, 1, 1561, 9, "#49dedc"),
+
+  leather_helmet: armorItem("Leather Cap", "helmet", 1, 70, "#8a5c38", "leather"),
+  leather_chestplate: armorItem("Leather Tunic", "chestplate", 2, 105, "#8a5c38", "leather"),
+  leather_leggings: armorItem("Leather Trousers", "leggings", 2, 95, "#8a5c38", "leather"),
+  leather_boots: armorItem("Leather Boots", "boots", 1, 80, "#8a5c38", "leather"),
 
   copper_helmet: armorItem("Copper Helmet", "helmet", 2, 120, "#c77b50", "copper"),
   copper_chestplate: armorItem("Copper Chestplate", "chestplate", 4, 180, "#c77b50", "copper"),
@@ -241,6 +304,28 @@ const armorRecipe = (id, name, input, amount, pattern, description) => ({
   description,
 });
 
+export const PLANT_GROWTH = {
+  wheat: { seedItem: "wheat_seeds", stages: ["wheat_crop_0", "wheat_crop_1", "wheat_crop_2", "wheat_crop_3"], stageMs: 12000, requiresFarmland: true },
+  meadow_grass: { seedItem: "grass_seeds", stages: ["meadow_grass_0", "meadow_grass_1", "meadow_grass_2"], stageMs: 9500, requiresFarmland: false },
+  yellow_flower: { seedItem: "flower_seeds", stages: ["yellow_flower_0", "yellow_flower_1", "yellow_flower_2"], stageMs: 14000, requiresFarmland: false },
+};
+
+export const getPlantGrowth = (plantType) => PLANT_GROWTH[plantType] || null;
+
+export const getPlantStageDuration = (plantType, stage = 0) => {
+  const growth = getPlantGrowth(plantType);
+  if (!growth) return 0;
+  const safeStage = Math.max(0, Math.min(growth.stages.length - 1, Number(stage) || 0));
+  const stageBlock = BLOCK_TYPES[growth.stages[safeStage]];
+  return Math.max(1000, Number(stageBlock?.growthMs) || Number(growth.stageMs) || 1000);
+};
+
+export const getPlantTotalGrowthMs = (plantType) => {
+  const growth = getPlantGrowth(plantType);
+  if (!growth) return 0;
+  return growth.stages.slice(0, -1).reduce((total, _blockType, stage) => total + getPlantStageDuration(plantType, stage), 0);
+};
+
 export const RECIPES = [
   { id: "planks", name: "Oak Planks", station: "inventory", inputs: { wood: 1 }, outputs: { planks: 4 }, description: "Turn an oak log into four planks." },
   { id: "spruce_planks", name: "Spruce Planks", station: "inventory", inputs: { spruce_wood: 1 }, outputs: { planks: 4 }, description: "Turn a spruce log into four universal building planks." },
@@ -252,6 +337,17 @@ export const RECIPES = [
   { id: "furnace", name: "Furnace", station: "crafting_table", inputs: { cobblestone: 8 }, outputs: { furnace: 1 }, description: "Smelts ore, makes charcoal, glass, and cooked food." },
   { id: "boat", name: "Oak Boat", station: "crafting_table", inputs: { planks: 5 }, outputs: { boat: 1 }, description: "Place on water, right click to board, and ride across waves." },
   { id: "bucket", name: "Empty Bucket", station: "crafting_table", inputs: { iron_ingot: 3 }, outputs: { bucket: 1 }, pattern: ["I I", " I ", "   "], description: "Collect and place flowing water sources." },
+  { id: "fishing_rod", name: "Fishing Rod", station: "crafting_table", inputs: { sticks: 3, wool: 2 }, outputs: { fishing_rod: 1 }, pattern: ["  S", " SW", "S W"], description: "Cast into water. Reel in when the bobber dives." },
+  { id: "guard_colony_box", name: "Guard Post Box", station: "crafting_table", inputs: { planks: 8, iron_ingot: 2, wool: 1 }, outputs: { guard_colony_box: 1 }, description: "Place to establish a guard post and recruit a defender." },
+  { id: "miner_colony_box", name: "Miner Hut Box", station: "crafting_table", inputs: { planks: 8, stone_pickaxe: 1, torch: 2 }, outputs: { miner_colony_box: 1 }, description: "Place to recruit a miner who gathers nearby stone and ore." },
+  { id: "farm_colony_box", name: "Farm House Box", station: "crafting_table", inputs: { planks: 8, wheat_seeds: 8, dirt: 4 }, outputs: { farm_colony_box: 1 }, description: "Place to recruit a farmer who plants, grows, and harvests wheat." },
+  { id: "animal_colony_box", name: "Animal Keeper Box", station: "crafting_table", inputs: { planks: 8, wheat: 4 }, outputs: { animal_colony_box: 1 }, description: "Place to recruit a keeper who gathers and breeds passive animals." },
+  { id: "fishing_colony_box", name: "Fishing Hut Box", station: "crafting_table", inputs: { planks: 8, fishing_rod: 1, boat: 1 }, outputs: { fishing_colony_box: 1 }, description: "Place near water to recruit a fisher who supplies the colony." },
+  { id: "leather_pickaxe", name: "Leather-Bound Pickaxe", station: "crafting_table", inputs: { leather: 2, sticks: 2, planks: 1 }, outputs: { leather_pickaxe: 1 }, description: "A lightweight starter pick with a reinforced leather grip." },
+  { id: "leather_axe", name: "Leather-Bound Axe", station: "crafting_table", inputs: { leather: 2, sticks: 2, planks: 1 }, outputs: { leather_axe: 1 }, description: "A light woodcutting tool made from hide and timber." },
+  { id: "leather_shovel", name: "Leather-Bound Shovel", station: "crafting_table", inputs: { leather: 1, sticks: 2, planks: 1 }, outputs: { leather_shovel: 1 }, description: "A flexible starter digging tool." },
+  { id: "leather_sword", name: "Leather-Bound Sword", station: "crafting_table", inputs: { leather: 2, sticks: 1, planks: 1 }, outputs: { leather_sword: 1 }, description: "A basic padded weapon for early defense." },
+  { id: "leather_hoe", name: "Leather-Bound Hoe", station: "crafting_table", inputs: { leather: 2, sticks: 2 }, outputs: { leather_hoe: 1 }, description: "Tills soil for crop planting." },
 
   toolRecipe("wooden_pickaxe", "Wooden Pickaxe", "crafting_table", "planks", 3, 2, "Mines stone, coal, and copper."),
   toolRecipe("stone_pickaxe", "Stone Pickaxe", "crafting_table", "cobblestone", 3, 2, "Mines iron and works faster on stone."),
@@ -269,11 +365,21 @@ export const RECIPES = [
   toolRecipe("iron_shovel", "Iron Shovel", "crafting_table", "iron_ingot", 1, 2, "Fast metal shovel."),
   toolRecipe("diamond_shovel", "Diamond Shovel", "crafting_table", "diamond", 1, 2, "Fastest durable shovel."),
 
+  toolRecipe("wooden_hoe", "Wooden Hoe", "crafting_table", "planks", 2, 2, "Tills grass and dirt into farmland."),
+  toolRecipe("stone_hoe", "Stone Hoe", "crafting_table", "cobblestone", 2, 2, "A durable farming tool."),
+  toolRecipe("iron_hoe", "Iron Hoe", "crafting_table", "iron_ingot", 2, 2, "An efficient farming tool."),
+  toolRecipe("diamond_hoe", "Diamond Hoe", "crafting_table", "diamond", 2, 2, "A long-lasting farming tool."),
+
   toolRecipe("wooden_sword", "Wooden Sword", "crafting_table", "planks", 2, 1, "Basic melee weapon."),
   toolRecipe("stone_sword", "Stone Sword", "crafting_table", "cobblestone", 2, 1, "Strong early-game weapon."),
   toolRecipe("iron_sword", "Iron Sword", "crafting_table", "iron_ingot", 2, 1, "Reliable metal weapon."),
   toolRecipe("golden_sword", "Golden Sword", "crafting_table", "gold_ingot", 2, 1, "Fast-looking but fragile weapon."),
   toolRecipe("diamond_sword", "Diamond Sword", "crafting_table", "diamond", 2, 1, "Highest melee damage."),
+
+  armorRecipe("leather_helmet", "Leather Cap", "leather", 5, ["LLL", "L L", "   "], "Light protection that does not slow movement."),
+  armorRecipe("leather_chestplate", "Leather Tunic", "leather", 8, ["L L", "LLL", "LLL"], "Early-game body protection."),
+  armorRecipe("leather_leggings", "Leather Trousers", "leather", 7, ["LLL", "L L", "L L"], "Flexible leg protection."),
+  armorRecipe("leather_boots", "Leather Boots", "leather", 4, ["   ", "L L", "L L"], "Soft boots for exploration."),
 
   armorRecipe("copper_helmet", "Copper Helmet", "copper_ingot", 5, ["CCC", "C C", "   "], "Basic ore helmet."),
   armorRecipe("copper_chestplate", "Copper Chestplate", "copper_ingot", 8, ["C C", "CCC", "CCC"], "Basic ore chest protection."),

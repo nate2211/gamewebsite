@@ -1,6 +1,6 @@
-# Cinematic UI Content Pack
+# Voxel UI Content Pack
 
-The files in `public/assets/ui-cinematic/` are the raw 768×768 originals used by the version 3 interface. They are mirrored into `src/assets/ui-cinematic/` so Create React App can fingerprint them during production builds.
+The files in `public/assets/ui-voxel/` are the raw 768×768 originals used by the version 3 interface. They are mirrored into `src/assets/ui-voxel/` so Create React App can fingerprint them during production builds.
 
 The interface assigns different surfaces to different screens:
 

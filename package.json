@@ -1,27 +1,38 @@
 {
-  "name": "gamewebsite",
-  "version": "0.1.0",
+  "name": "voxel-frontier-grass-farming-cra",
+  "version": "12.0.0",
   "private": true,
   "dependencies": {
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^13.5.0",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^6.4.7",
+    "@mui/material": "^6.4.7",
+    "@react-three/fiber": "^8.17.14",
+    "@reduxjs/toolkit": "^2.5.1",
+    "dexie": "^4.0.11",
+    "dexie-react-hooks": "^1.1.7",
+    "nanoid": "^5.0.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-redux": "^9.2.0",
+    "react-router-dom": "^6.30.1",
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "seedrandom": "^3.0.5",
+    "simplex-noise": "^4.0.3",
+    "three": "^0.173.0"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "validate": "node scripts/validate-colony.cjs && node scripts/validate-colony-defense.cjs && node scripts/validate-grass-farming.cjs && node scripts/validate-enterprise-terrain.cjs && node scripts/validate-engine-streaming.cjs && npm run validate:multiplayer",
+    "validate:legacy": "node scripts/validate-project.cjs && node scripts/validate-viewport.cjs && node scripts/validate-cinematic.cjs && node scripts/validate-expanded.cjs && node scripts/validate-pixel-world.cjs && node scripts/validate-blockstyle.cjs && node scripts/validate-voxel-render.cjs && node scripts/validate-load-world.cjs && node scripts/validate-create-world.cjs && node scripts/validate-render-persistence.cjs && node scripts/validate-smooth-render.cjs && node scripts/validate-rendering-issue.cjs && node scripts/validate-terrain-stays-visible.cjs && node scripts/validate-world-visible-guaranteed.cjs",
+    "validate:multiplayer": "node scripts/validate-multiplayer.cjs"
   },
   "eslintConfig": {
     "extends": [
-      "react-app",
-      "react-app/jest"
+      "react-app"
     ]
   },
   "browserslist": {
@@ -35,5 +46,6 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "homepage": "."
 }

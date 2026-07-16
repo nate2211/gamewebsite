@@ -16,7 +16,7 @@ for (const needle of ["Blockstyle 4.0", "ui-voxel/inventory-stone-grid.jpg", "--
   if (!css.includes(needle)) failures.push(`index.css missing ${needle}`);
 }
 const hand = read("src/game/player/FirstPersonViewModel.js");
-for (const needle of ["function PixelBlockArm", "SKIN_BASE", "VIEWMODEL_LAYER = 31", "gl.clearDepth()"])
+for (const needle of ["function PixelBlockArm", "SKIN_BASE", "createPortal", "gl.clearDepth()", "renderOrder = 10000"])
   if (!hand.includes(needle)) failures.push(`FirstPersonViewModel missing ${needle}`);
 const sky = read("src/game/world/rendering/VoxelSky.js");
 for (const needle of ["STAR_LAYOUT", "SunPixels", "MoonPixels", "CLOUD_BLOCKS"])

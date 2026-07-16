@@ -3,6 +3,7 @@ import { BLOCK_TYPES } from "../../config/blockTypes";
 
 const textureCache = new Map();
 const materialCache = new Map();
+const plantMaterialCache = new Map();
 const crackTextureCache = new Map();
 
 function hashText(value) {
@@ -33,7 +34,7 @@ function faceBase(type, face) {
   const color = BLOCK_TYPES[type]?.color || "#888888";
   if (type.endsWith("_ore")) return "#777d82";
   if (type === "grass") {
-    if (face === "top") return "#6ead3e";
+    if (face === "top") return "#63b13d";
     if (face === "bottom") return "#795334";
     return "#795334";
   }
@@ -67,16 +68,16 @@ function drawPixelPattern(ctx, type, face, base, seed) {
   ctx.fillStyle = base;
   ctx.fillRect(0, 0, 16, 16);
 
-  for (let index = 0; index < 62; index += 1) {
+  for (let index = 0; index < 132; index += 1) {
     const x = Math.floor(randomFrom(seed, index * 2) * 16);
     const y = Math.floor(randomFrom(seed, index * 2 + 1) * 16);
-    const delta = randomFrom(seed, index + 150) > 0.52 ? 0.09 : -0.11;
+    const delta = randomFrom(seed, index + 150) > 0.52 ? 0.12 : -0.15;
     ctx.fillStyle = shade(base, delta);
     ctx.fillRect(x, y, randomFrom(seed, index + 270) > 0.86 ? 2 : 1, 1);
   }
 
   if (type === "grass" && face === "side") {
-    ctx.fillStyle = "#5f9f38";
+    ctx.fillStyle = "#62aa38";
     ctx.fillRect(0, 0, 16, 4);
     for (let x = 0; x < 16; x += 1) {
       const depth = 2 + Math.floor(randomFrom(seed, x + 500) * 4);
@@ -179,6 +180,56 @@ function drawPixelPattern(ctx, type, face, base, seed) {
     });
   }
 
+
+  const meadowPlant = ["tall_grass", "meadow_grass_0", "meadow_grass_1", "meadow_grass_2"].includes(type);
+  const flowerPlant = ["wildflower", "yellow_flower_0", "yellow_flower_1", "yellow_flower_2"].includes(type);
+  const wheatPlant = type.startsWith("wheat_crop_");
+  if (type === "vine" || meadowPlant || flowerPlant || wheatPlant || type === "snow_layer") {
+    ctx.clearRect(0, 0, 16, 16);
+    if (type === "snow_layer") {
+      ctx.fillStyle = "#f5fbff";
+      ctx.fillRect(0, 0, 16, 16);
+      ctx.fillStyle = "rgba(180,215,235,.55)";
+      for (let i = 0; i < 18; i += 1) ctx.fillRect(Math.floor(randomFrom(seed, i + 1400) * 16), Math.floor(randomFrom(seed, i + 1500) * 16), 1, 1);
+    } else if (type === "vine") {
+      ctx.fillStyle = "#2d8238";
+      [3, 5, 9, 12].forEach((x, index) => {
+        ctx.fillRect(x, 0, 2, 16);
+        if (index % 2 === 0) ctx.fillRect(Math.max(0, x - 2), 3 + index * 2, 4, 1);
+        ctx.fillRect(x + 1, 8 + (index % 3), 3, 1);
+      });
+    } else {
+      const definition = BLOCK_TYPES[type] || {};
+      const stage = Number.isFinite(definition.growthStage) ? definition.growthStage : 2;
+      const maxStage = wheatPlant ? 3 : 2;
+      const height = 6 + Math.round((stage / maxStage) * 9);
+      const stemColor = wheatPlant && stage >= 2 ? "#b6a141" : flowerPlant ? "#5f9f34" : "#61a83c";
+      ctx.fillStyle = stemColor;
+      const stems = stage === 0 ? [7, 9] : stage === 1 ? [4, 7, 10, 13] : [2, 5, 8, 11, 14];
+      stems.forEach((x, index) => {
+        const bladeHeight = Math.max(4, height - (index % 3));
+        ctx.fillRect(x, 16 - bladeHeight, 1, bladeHeight);
+        if (stage > 0 && index % 2 === 0) ctx.fillRect(Math.max(0, x - 1), 16 - bladeHeight + 4, 3, 1);
+      });
+      if (wheatPlant && stage >= 2) {
+        ctx.fillStyle = stage >= 3 ? "#e3bd4b" : "#b9b34b";
+        stems.forEach((x, index) => {
+          if (index % 2 === 0) ctx.fillRect(Math.max(0, x - 1), Math.max(0, 16 - height - 1), 3, 3);
+        });
+      }
+      if (flowerPlant && stage >= 2) {
+        ctx.fillStyle = "#f2cf43";
+        [[5, 5], [11, 4]].forEach(([x, y]) => {
+          ctx.fillRect(x - 1, y, 3, 1);
+          ctx.fillRect(x, y - 1, 1, 3);
+          ctx.fillStyle = "#8b5a24";
+          ctx.fillRect(x, y, 1, 1);
+          ctx.fillStyle = "#f2cf43";
+        });
+      }
+    }
+  }
+
   if (type === "ice") {
     ctx.strokeStyle = "rgba(225,250,255,.48)";
     ctx.lineWidth = 1;
@@ -237,14 +288,17 @@ function createTexture(type, face) {
   if (typeof document === "undefined") return null;
 
   const canvas = document.createElement("canvas");
-  canvas.width = 16;
-  canvas.height = 16;
+  canvas.width = 32;
+  canvas.height = 32;
   const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.scale(2, 2);
   const base = faceBase(type, face);
   drawPixelPattern(ctx, type, face, base, hashText(key));
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.NearestMipmapNearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.generateMipmaps = false;
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
@@ -263,21 +317,38 @@ function faceName(index) {
 export function getBlockMaterials(type) {
   if (materialCache.has(type)) return materialCache.get(type);
   const definition = BLOCK_TYPES[type] || {};
+  const faceShade = [0.84, 0.73, 1, 0.57, 0.91, 0.78];
   const materials = Array.from({ length: 6 }, (_, index) => {
     const map = createTexture(type, faceName(index));
     const transparent = Boolean(definition.transparent);
+    const shadeValue = faceShade[index] ?? 0.88;
     return new THREE.MeshLambertMaterial({
-      color: "#ffffff",
+      color: new THREE.Color(shadeValue, shadeValue, shadeValue),
       map,
       flatShading: true,
       transparent,
       opacity: type.includes("leaves") ? 0.92 : type === "glass" ? 0.42 : type === "ice" ? 0.76 : type === "water" ? 0.58 : 1,
-      alphaTest: type.includes("leaves") || type === "seagrass" || type === "kelp" ? 0.18 : 0,
+      alphaTest: type.includes("leaves") || ["seagrass", "kelp", "vine", "tall_grass", "wildflower"].includes(type) || type.startsWith("meadow_grass_") || type.startsWith("yellow_flower_") || type.startsWith("wheat_crop_") ? 0.18 : 0,
       depthWrite: !["glass", "ice", "water"].includes(type),
+      dithering: false,
     });
   });
   materialCache.set(type, materials);
   return materials;
+}
+
+export function getPlantMaterial(type) {
+  if (plantMaterialCache.has(type)) return plantMaterialCache.get(type);
+  const source = getBlockMaterials(type)[0];
+  const material = source.clone();
+  material.side = THREE.DoubleSide;
+  material.transparent = true;
+  material.alphaTest = Math.max(0.2, material.alphaTest || 0);
+  material.depthWrite = true;
+  material.flatShading = true;
+  material.needsUpdate = true;
+  plantMaterialCache.set(type, material);
+  return material;
 }
 
 function drawCrackBranch(ctx, seed, originX, originY, length, depth, stage) {

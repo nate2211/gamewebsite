@@ -153,6 +153,32 @@ function drawPixelPattern(ctx, type, face, base, seed) {
     }
   }
 
+  if (type === "water") {
+    ctx.fillStyle = "rgba(39,112,183,.95)";
+    ctx.fillRect(0, 0, 16, 16);
+    ctx.strokeStyle = "rgba(164,224,255,.45)";
+    ctx.lineWidth = 1;
+    for (let y = 2; y < 16; y += 5) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(5, y - 1);
+      ctx.lineTo(11, y + 1);
+      ctx.lineTo(16, y);
+      ctx.stroke();
+    }
+  }
+
+  if (type === "seagrass" || type === "kelp") {
+    ctx.clearRect(0, 0, 16, 16);
+    ctx.fillStyle = type === "kelp" ? "#246f49" : "#39a86e";
+    const blades = type === "kelp" ? [5, 8, 11] : [3, 6, 10, 13];
+    blades.forEach((x, index) => {
+      const h = type === "kelp" ? 15 - index : 8 + ((index * 3) % 7);
+      ctx.fillRect(x, 16 - h, type === "kelp" ? 2 : 1, h);
+      if (index % 2 === 0) ctx.fillRect(x + 1, 16 - h + 3, 2, 1);
+    });
+  }
+
   if (type === "ice") {
     ctx.strokeStyle = "rgba(225,250,255,.48)";
     ctx.lineWidth = 1;
@@ -245,9 +271,9 @@ export function getBlockMaterials(type) {
       map,
       flatShading: true,
       transparent,
-      opacity: type.includes("leaves") ? 0.92 : type === "glass" ? 0.42 : type === "ice" ? 0.76 : 1,
-      alphaTest: type.includes("leaves") ? 0.28 : 0,
-      depthWrite: !["glass", "ice"].includes(type),
+      opacity: type.includes("leaves") ? 0.92 : type === "glass" ? 0.42 : type === "ice" ? 0.76 : type === "water" ? 0.58 : 1,
+      alphaTest: type.includes("leaves") || type === "seagrass" || type === "kelp" ? 0.18 : 0,
+      depthWrite: !["glass", "ice", "water"].includes(type),
     });
   });
   materialCache.set(type, materials);

@@ -1,3 +1,5 @@
+import { BLOCK_TYPES } from "./blockTypes";
+
 export const DIRECTIONS = [
   [1, 0, 0],
   [-1, 0, 0],
@@ -15,22 +17,31 @@ export function parseBlockKey(key) {
   return key.split(",").map(Number);
 }
 
-export function hasBlock(blocks, x, y, z) {
-  return Boolean(blocks[blockKey(x, y, z)]);
+export function hasSolidBlock(blocks, x, y, z) {
+  const type = blocks[blockKey(x, y, z)]?.type;
+  return Boolean(type && BLOCK_TYPES[type]?.solid !== false);
 }
 
 export function getVisibleBlocksByType(blocks) {
   const byType = {};
 
-  Object.entries(blocks).forEach(([key, block]) => {
+  Object.entries(blocks).forEach(([key, current]) => {
     const [x, y, z] = parseBlockKey(key);
-    const exposed = DIRECTIONS.some(
-      ([dx, dy, dz]) => !hasBlock(blocks, x + dx, y + dy, z + dz)
-    );
+    const definition = BLOCK_TYPES[current.type];
+    if (!definition) return;
+
+    const exposed = current.type === "water"
+      ? blocks[blockKey(x, y + 1, z)]?.type !== "water"
+      : definition.solid === false || DIRECTIONS.some(([dx, dy, dz]) => {
+          const neighbor = blocks[blockKey(x + dx, y + dy, z + dz)];
+          if (!neighbor) return true;
+          if (neighbor.type === current.type && definition.transparent) return false;
+          return BLOCK_TYPES[neighbor.type]?.transparent || BLOCK_TYPES[neighbor.type]?.solid === false;
+        });
 
     if (!exposed) return;
-    if (!byType[block.type]) byType[block.type] = [];
-    byType[block.type].push([x, y, z]);
+    if (!byType[current.type]) byType[current.type] = [];
+    byType[current.type].push([x, y, z]);
   });
 
   return byType;
@@ -38,22 +49,13 @@ export function getVisibleBlocksByType(blocks) {
 
 export function createHeightMap(blocks) {
   const map = {};
-  Object.entries(blocks).forEach(([key, block]) => {
-    if (block.type === "leaves" || block.type === "wood") return;
+  Object.entries(blocks).forEach(([key, current]) => {
+    const definition = BLOCK_TYPES[current.type];
+    if (!definition || definition.solid === false) return;
+    if (["leaves", "spruce_leaves", "jungle_leaves", "wood", "spruce_wood", "jungle_wood"].includes(current.type)) return;
     const [x, y, z] = parseBlockKey(key);
     const columnKey = `${x},${z}`;
     if (map[columnKey] == null || y > map[columnKey]) map[columnKey] = y;
   });
   return map;
-}
-
-export function findHighestBlock(blocks, x, z) {
-  let highest = -Infinity;
-
-  Object.keys(blocks).forEach((key) => {
-    const [bx, by, bz] = parseBlockKey(key);
-    if (bx === x && bz === z && by > highest) highest = by;
-  });
-
-  return Number.isFinite(highest) ? highest : 0;
 }

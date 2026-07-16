@@ -47,8 +47,8 @@ for (const file of sourceFiles) {
 
 requireText("src/pages/GamePage.js", "flushSync", "instant E menu commit missing");
 requireText("src/pages/GamePage.js", 'event.code !== "KeyE"', "E inventory toggle missing");
-requireText("src/components/inventory/dialog/InventoryDialog.js", "keepMounted", "mounted inventory shell missing");
-requireText("src/components/inventory/dialog/InventoryDialog.js", "transitionDuration={0}", "zero-duration menu transition missing");
+requireText("src/components/inventory/dialog/InventoryDialog.js", "fast-inventory-overlay", "fast inventory shell missing");
+requireText("src/components/inventory/dialog/InventoryDialog.js", "if (!open) return null", "closed inventory unmount missing");
 requireText("src/components/game/canvas/GameCanvas.js", "<ColonySystem", "colony runtime not mounted");
 requireText("src/components/game/canvas/GameCanvas.js", "<FarmSystem", "crop growth runtime not mounted");
 requireText("src/components/game/canvas/GameCanvas.js", "<FishingSystem", "fishing runtime not mounted");
@@ -62,7 +62,7 @@ requireText("src/game/config/blockTypes.js", "leather_chestplate", "leather armo
 requireText("src/game/config/blockTypes.js", "wheat_crop_3", "crop stages missing");
 requireText("src/game/systems/InteractionController.js", "projectileRuntime.throwEgg", "throwable eggs missing");
 requireText("src/game/systems/InteractionController.js", 'toolType === "hoe"', "hoe tilling missing");
-requireText("src/game/systems/InteractionController.js", 'usableSelectedItem === "wheat_seeds"', "seed planting missing");
+requireText("src/game/systems/InteractionController.js", "selectedPlantType", "generic seed planting missing");
 requireText("src/game/config/blockTypes.js", "solid: false, bonusDrops", "walk-through leaves missing");
 requireText("src/game/config/mobTypes.js", "raw_porkchop", "pig food drops missing");
 requireText("src/game/config/mobTypes.js", "feather", "bird/chicken feather drops missing");
@@ -73,7 +73,7 @@ requireText("src/features/world/worldSlice.js", "droppedItems", "physical drop p
 requireText("src/features/world/worldSlice.js", "cloneColonyState", "colony save hydration missing");
 requireText("src/data/db.js", "colony:", "colony serialization missing");
 requireText("src/data/db.js", "weather:", "weather serialization missing");
-requireText("src/game/world/generation/worldGenerator.js", "TERRAIN_GENERATOR_VERSION = 12", "generator version not updated");
+requireText("src/game/world/generation/worldGenerator.js", "TERRAIN_GENERATOR_VERSION = 14", "generator version not updated");
 
 const lockText = fs.readFileSync(path.join(root, "package-lock.json"), "utf8");
 if (/applied-caas|internal\.api\.openai/i.test(lockText)) fail("package-lock contains inaccessible internal registry URLs");

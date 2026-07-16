@@ -27,6 +27,7 @@ const renderer = read('src/game/world/rendering/WorldRenderer.js');
 const textures = read('src/game/world/rendering/voxelTextures.js');
 const farm = read('src/game/farming/FarmSystem.js');
 const interaction = read('src/game/systems/InteractionController.js');
+const migration = read('src/game/world/loading/terrainMigration.js');
 
 const checks = [
   [!dialog.includes('<Dialog') && !dialog.includes('keepMounted'), 'custom non-MUI inventory overlay'],
@@ -35,12 +36,14 @@ const checks = [
   [itemIcon.includes('preloadItemIcons') && !itemIcon.includes('/assets/items/'), 'prewarmed generated item icons without 404 requests'],
   [blocks.includes('PLANT_GROWTH') && blocks.includes('grass_seeds') && blocks.includes('flower_seeds'), 'seed and growth definitions'],
   [blocks.includes('meadow_grass_0') && blocks.includes('meadow_grass_2') && blocks.includes('yellow_flower_2'), 'physical plant growth blocks'],
-  [generator.includes('TERRAIN_GENERATOR_VERSION = 13') && generator.includes('groundType === "grass"'), 'regenerated static grass-top terrain'],
+  [generator.includes('TERRAIN_GENERATOR_VERSION = 14') && generator.includes('groundType === "grass"'), 'regenerated static grass-top terrain'],
   [!generator.includes('blocks[plantKey] = { type: "wildflower" }') && !generator.includes('blocks[plantKey] = { type: "tall_grass" }'), 'legacy purple/flat plants removed from generation'],
-  [renderer.includes('createCrossPlantGeometry') && renderer.includes('GrassCapInstances'), 'crossed plant geometry and static grass cap'],
+  [renderer.includes('createVoxelPlantGeometry') && renderer.includes('createVoxelVineGeometry'), 'true voxel plant and vine geometry'],
+  [renderer.includes('!terrainVisuallyStable && <TerrainSurfaceShell') && !renderer.includes('GrassCapInstances'), 'startup-only fallback shell and authoritative grass cube tops'],
   [textures.includes('yellow_flower_2') && textures.includes('#f2cf43'), 'transparent yellow flower texture instead of purple slab'],
-  [farm.includes('getPlantGrowth') && farm.includes('growth.stages[nextStage]'), 'generic saved plant growth timer'],
+  [farm.includes('getPlantStageDuration') && farm.includes('growth.stages[nextStage]'), 'per-stage saved plant growth timer'],
   [interaction.includes('selectedPlantType') && interaction.includes('plantGrowth.stages[0]'), 'seed planting interaction'],
+  [migration.includes('purple_block') && migration.includes('sanitizeBlockEdits'), 'legacy purple/debug terrain migration'],
 ];
 for (const [ok, label] of checks) if (!ok) throw new Error(`Missing ${label}`);
 console.log(`Grass/farming validation passed: ${files.length} JS/JSX modules parsed and ${checks.length} feature contracts verified.`);

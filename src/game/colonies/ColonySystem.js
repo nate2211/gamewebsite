@@ -9,6 +9,7 @@ import {
   breedColonyAnimal,
   mobCombatHit,
   plantCrop,
+  respawnColonyWorker,
 } from "../../features/world/worldSlice";
 import {
   COLONY_GUARD_RADIUS,
@@ -58,8 +59,21 @@ export default function ColonySystem({ enabled = true }) {
     const stations = {};
 
     colony.stations.forEach((station) => {
-      const worker = mobs.find((mob) => mob.id === station.workerId);
-      if (!worker) return;
+      if (station.destroyed) {
+        stations[station.id] = { status: "Station destroyed", progress: 0, workerState: "station destroyed" };
+        return;
+      }
+      const worker = mobs.find((mob) => mob.id === station.workerId && !mob.dyingUntil);
+      if (!worker) {
+        if (station.respawnAt && now >= station.respawnAt) dispatch(respawnColonyWorker({ stationId: station.id, now }));
+        const remaining = Math.max(0, Math.ceil(((station.respawnAt || now) - now) / 1000));
+        stations[station.id] = {
+          status: station.respawnAt ? `Respawning in ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}` : "Worker missing",
+          progress: station.respawnAt ? 1 - remaining / 600 : 0,
+          workerState: station.respawnAt ? "respawning" : "dead",
+        };
+        return;
+      }
       const runtime = runtimeMap.current.get(station.id) || { target: null, searchAt: 0, actionAt: 0, patrol: Math.random() * Math.PI * 2 };
       runtimeMap.current.set(station.id, runtime);
       let next = { ...worker };
@@ -68,8 +82,36 @@ export default function ColonySystem({ enabled = true }) {
       const home = stationHome(station);
       if (!station.enabled) {
         workers[worker.id] = moveWorker(next, home, 0.8, delta);
-        stations[station.id] = { status, progress };
+        stations[station.id] = { status, progress, workerState: "idle" };
         return;
+      }
+
+      const immediateThreat = mobs
+        .filter((mob) => MOB_TYPES[mob.type]?.hostile && !mob.dyingUntil)
+        .map((mob) => ({ mob, distance: distance2d(worker, mob) }))
+        .filter((entry) => entry.distance <= (station.job === "guard" ? COLONY_GUARD_RADIUS : 8))
+        .sort((a, b) => a.distance - b.distance)[0];
+      if (immediateThreat && station.job !== "guard") {
+        const guardNearby = colony.stations.some((other) => other.job === "guard" && !other.destroyed && other.workerState !== "dead" && distance2d(other.position, worker) <= 12);
+        if (station.job === "miner" && !guardNearby && immediateThreat.distance <= 4.5) {
+          next = moveWorker(next, immediateThreat.mob, 1.15, delta);
+          status = `Defending against ${MOB_TYPES[immediateThreat.mob.type]?.name || immediateThreat.mob.type}`;
+          progress = 1;
+          if (immediateThreat.distance <= 1.5 && now >= runtime.actionAt) {
+            runtime.actionAt = now + 1100;
+            dispatch(mobCombatHit({ targetId: immediateThreat.mob.id, amount: 3, friendlyAttack: true }));
+          }
+          workers[worker.id] = next;
+          stations[station.id] = { status, progress, workerState: "defending" };
+          return;
+        }
+        if (["farmer", "rancher", "fisher"].includes(station.job) || !guardNearby) {
+          const fleeTarget = { x: home.x + (home.x - immediateThreat.mob.x) * 0.8, y: home.y, z: home.z + (home.z - immediateThreat.mob.z) * 0.8 };
+          next = moveWorker(next, fleeTarget, 1.75, delta);
+          workers[worker.id] = next;
+          stations[station.id] = { status: `Fleeing ${MOB_TYPES[immediateThreat.mob.type]?.name || "enemy"}`, progress: 0, workerState: "fleeing" };
+          return;
+        }
       }
 
       if (station.job === "guard") {
@@ -186,7 +228,7 @@ export default function ColonySystem({ enabled = true }) {
         }
       }
       workers[worker.id] = next;
-      stations[station.id] = { status, progress: Math.max(0, Math.min(1, progress)) };
+      stations[station.id] = { status, progress: Math.max(0, Math.min(1, progress)), workerState: status.startsWith("Defending") ? "defending" : "working" };
     });
     if (Object.keys(workers).length || Object.keys(stations).length) dispatch(applyColonyFrame({ workers, stations }));
   });

@@ -1,7 +1,62 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useEffect, useState } from "react";
 import { BLOCK_TYPES, getItemDefinition } from "../../../game/config/blockTypes";
 
 const iconCache = new Map();
+const ICON_BATCH_SIZE = 6;
+
+const iconListeners = new Map();
+const pendingIconIds = [];
+const pendingIconSet = new Set();
+let iconQueueScheduled = false;
+
+function publishIcon(itemId, src) {
+  const listeners = iconListeners.get(itemId);
+  if (!listeners) return;
+  listeners.forEach((listener) => listener(src));
+  iconListeners.delete(itemId);
+}
+
+function processIconQueue(deadline) {
+  iconQueueScheduled = false;
+  let processed = 0;
+  while (pendingIconIds.length && processed < ICON_BATCH_SIZE) {
+    if (deadline?.timeRemaining && deadline.timeRemaining() < 2 && processed > 0) break;
+    const itemId = pendingIconIds.shift();
+    pendingIconSet.delete(itemId);
+    const src = createIcon(itemId);
+    publishIcon(itemId, src);
+    processed += 1;
+  }
+  if (pendingIconIds.length) scheduleIconQueue();
+}
+
+function scheduleIconQueue() {
+  if (iconQueueScheduled || typeof window === "undefined") return;
+  iconQueueScheduled = true;
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(processIconQueue, { timeout: 90 });
+  } else {
+    window.setTimeout(() => processIconQueue(null), 0);
+  }
+}
+
+function queueIcon(itemId) {
+  if (!itemId || iconCache.has(itemId) || pendingIconSet.has(itemId)) return;
+  pendingIconSet.add(itemId);
+  pendingIconIds.push(itemId);
+  scheduleIconQueue();
+}
+
+function subscribeToIcon(itemId, listener) {
+  if (!iconListeners.has(itemId)) iconListeners.set(itemId, new Set());
+  iconListeners.get(itemId).add(listener);
+  queueIcon(itemId);
+  return () => {
+    const listeners = iconListeners.get(itemId);
+    listeners?.delete(listener);
+    if (listeners?.size === 0) iconListeners.delete(itemId);
+  };
+}
 
 function shade(hex, amount) {
   const value = String(hex || "#888888").replace("#", "");
@@ -165,6 +220,44 @@ function drawMaterial(ctx, itemId, definition) {
     ctx.stroke();
     return;
   }
+  if (itemId === "grass_seeds" || itemId === "flower_seeds") {
+    ctx.fillStyle = itemId === "grass_seeds" ? "#78a942" : "#d7b33f";
+    for (let i = 0; i < 9; i += 1) {
+      const x = 17 + ((i * 13) % 31);
+      const y = 18 + ((i * 17) % 29);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate((i % 5) * 0.43);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 4, 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    return;
+  }
+  if (itemId === "grass_clippings") {
+    ctx.strokeStyle = "#5fa63b";
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 8; i += 1) {
+      ctx.beginPath();
+      ctx.moveTo(16 + i * 4, 51);
+      ctx.lineTo(11 + i * 6, 17 + (i % 3) * 6);
+      ctx.stroke();
+    }
+    return;
+  }
+  if (itemId === "yellow_flower") {
+    ctx.strokeStyle = "#4f8e32";
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(32, 54); ctx.lineTo(32, 26); ctx.stroke();
+    ctx.fillStyle = "#f1cf45";
+    for (let i = 0; i < 8; i += 1) {
+      const angle = (i / 8) * Math.PI * 2;
+      ctx.beginPath(); ctx.ellipse(32 + Math.cos(angle) * 9, 21 + Math.sin(angle) * 9, 6, 3, angle, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = "#7b4d24"; ctx.beginPath(); ctx.arc(32, 21, 5, 0, Math.PI * 2); ctx.fill();
+    return;
+  }
   if (itemId === "wheat") {
     ctx.strokeStyle = "#8f6d25";
     ctx.lineWidth = 4;
@@ -257,9 +350,32 @@ function createIcon(itemId) {
   return url;
 }
 
+export function preloadItemIcons(itemIds = []) {
+  if (typeof document === "undefined") return;
+  [...new Set(itemIds)].filter(Boolean).forEach(queueIcon);
+}
+
 function ItemIcon({ itemId, size = 38, alt = "" }) {
-  const src = useMemo(() => (itemId ? createIcon(itemId) : ""), [itemId]);
-  if (!itemId || !src) return null;
+  const [src, setSrc] = useState(() => (itemId ? iconCache.get(itemId) || "" : ""));
+
+  useEffect(() => {
+    if (!itemId) {
+      setSrc("");
+      return undefined;
+    }
+    const cached = iconCache.get(itemId);
+    if (cached) {
+      setSrc(cached);
+      return undefined;
+    }
+    setSrc("");
+    return subscribeToIcon(itemId, setSrc);
+  }, [itemId]);
+
+  if (!itemId) return null;
+  if (!src) {
+    return <span className="inventory-icon-placeholder" aria-hidden="true" style={{ width: size, height: size }} />;
+  }
   return (
     <img
       src={src}
@@ -267,6 +383,8 @@ function ItemIcon({ itemId, size = 38, alt = "" }) {
       draggable={false}
       width={size}
       height={size}
+      loading="lazy"
+      decoding="async"
       style={{
         display: "block",
         width: "82%",

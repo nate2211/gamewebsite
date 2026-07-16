@@ -1,15 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { lazy, memo, Suspense, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  IconButton,
   Stack,
-  Tab,
-  Tabs,
   Typography,
 } from "@mui/material";
 import BuildIcon from "@mui/icons-material/Build";
@@ -17,25 +12,70 @@ import Inventory2Icon from "@mui/icons-material/Inventory2";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import SecurityIcon from "@mui/icons-material/Security";
 import AutoGraphIcon from "@mui/icons-material/AutoGraph";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import MemoryIcon from "@mui/icons-material/Memory";
+import SaveAltIcon from "@mui/icons-material/SaveAlt";
+import HomeWorkIcon from "@mui/icons-material/HomeWork";
+import CloseIcon from "@mui/icons-material/Close";
 import { useDispatch, useSelector } from "react-redux";
 import { craftRecipe } from "../../../features/world/worldSlice";
 import { RECIPES, getItemDefinition } from "../../../game/config/blockTypes";
 import InventoryTab from "../tabs/InventoryTab";
-import ArmorPanel from "../../armor/ArmorPanel";
-import StatsPanel from "../../progression/StatsPanel";
-import CraftingTablePanel from "../../crafting/table/CraftingTablePanel";
-import FurnacePanel from "../../crafting/furnace/FurnacePanel";
 
-function titleForStation(station) {
-  if (station === "crafting_table") return "Crafting Table";
-  if (station === "furnace") return "Furnace";
-  return "Inventory";
+
+const ArmorPanel = lazy(() => import("../../armor/ArmorPanel"));
+const StatsPanel = lazy(() => import("../../progression/StatsPanel"));
+const CraftingTablePanel = lazy(() => import("../../crafting/table/CraftingTablePanel"));
+const FurnacePanel = lazy(() => import("../../crafting/furnace/FurnacePanel"));
+const PerksPanel = lazy(() => import("../../progression/perks/PerksPanel"));
+const QuestJournalPanel = lazy(() => import("../../quests/journal/QuestJournalPanel"));
+const CodexPanel = lazy(() => import("../../codex/entries/CodexPanel"));
+const PerformancePanel = lazy(() => import("../../system/performance/PerformancePanel"));
+const WorldBackupPanel = lazy(() => import("../../system/backups/WorldBackupPanel"));
+const ColonyPanel = lazy(() => import("../../colonies/panel/ColonyPanel"));
+
+export function preloadEssentialInventoryPanels() {
+  return Promise.allSettled([import("../../progression/StatsPanel")]);
+}
+export function preloadStationPanel(stationType) {
+  if (stationType === "crafting_table") return import("../../crafting/table/CraftingTablePanel");
+  if (stationType === "furnace") return import("../../crafting/furnace/FurnacePanel");
+  if (stationType === "colony_box") return import("../../colonies/panel/ColonyPanel");
+  return Promise.resolve();
 }
 
-function iconForStation(station) {
-  if (station === "crafting_table") return <BuildIcon />;
-  if (station === "furnace") return <LocalFireDepartmentIcon />;
-  return <Inventory2Icon />;
+function MenuPanelFallback() {
+  return (
+    <Box className="menu-panel-fallback" role="status" aria-live="polite">
+      <div className="menu-panel-fallback-cube" />
+      <Typography fontWeight={1000}>Loading this menu panel…</Typography>
+      <Typography variant="body2" color="text.secondary">The game world remains paused and rendered.</Typography>
+    </Box>
+  );
+}
+
+const TABS = {
+  inventory: { label: "Inventory", subtitle: "Items and hotbar", icon: Inventory2Icon },
+  crafting: { label: "Field Crafting", subtitle: "Pocket recipes", icon: BuildIcon },
+  workbench: { label: "Workbench", subtitle: "3×3 master crafting", icon: BuildIcon },
+  furnace: { label: "Forge", subtitle: "Fuel and smelting", icon: LocalFireDepartmentIcon },
+  armor: { label: "Armory", subtitle: "3D equipment", icon: SecurityIcon },
+  stats: { label: "Attributes", subtitle: "Level and growth", icon: AutoGraphIcon },
+  perks: { label: "Perk Paths", subtitle: "Passive talents", icon: AutoAwesomeIcon },
+  quests: { label: "Journal", subtitle: "Objectives and rewards", icon: AssignmentTurnedInIcon },
+  codex: { label: "Codex", subtitle: "World knowledge", icon: MenuBookIcon },
+  performance: { label: "Systems", subtitle: "Rendering controls", icon: MemoryIcon },
+  backups: { label: "World Archive", subtitle: "Export and recovery", icon: SaveAltIcon },
+  colony: { label: "Colony", subtitle: "Workers and storage", icon: HomeWorkIcon },
+};
+
+function titleForStation(station) {
+  if (station === "crafting_table") return "Artisan Workbench";
+  if (station === "furnace") return "Ember Forge";
+  if (station === "colony_box") return "Colony Command";
+  return "Adventurer Menu";
 }
 
 function InventoryCraftingPanel({ inventory }) {
@@ -43,84 +83,166 @@ function InventoryCraftingPanel({ inventory }) {
   const recipes = useMemo(() => RECIPES.filter((recipe) => recipe.station === "inventory"), []);
   return (
     <Box>
-      <Typography variant="h6" fontWeight={1000}>Pocket crafting</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-        Basic recipes fit in the player crafting area. Place and interact with a crafting table for 3×3 recipes, tools, boats, buckets, and armor.
-      </Typography>
-      <Stack spacing={1.2}>
+      <div className="rpg-section-heading">
+        <div>
+          <Typography variant="h5" fontWeight={1000}>Field crafting</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Quick recipes made without a station. Advanced tools, armor, boats, and mechanisms require a placed crafting table.
+          </Typography>
+        </div>
+      </div>
+      <div className="recipe-card-grid compact-recipes">
         {recipes.map((recipe) => {
           const available = Object.entries(recipe.inputs).every(([item, amount]) => (inventory[item] || 0) >= amount);
           const outputSpace = Object.entries(recipe.outputs).every(([item, amount]) => (inventory[item] || 0) + amount <= (getItemDefinition(item).maxStack || 64));
           return (
-            <Box key={recipe.id} sx={{ p: 1.5, border: "1px solid rgba(255,255,255,.12)", bgcolor: "rgba(255,255,255,.025)" }}>
-              <Stack direction={{ xs: "column", sm: "row" }} gap={1.2} alignItems={{ sm: "center" }}>
-                <Box sx={{ flexGrow: 1 }}>
+            <article key={recipe.id} className={`rpg-recipe-card ${available ? "is-ready" : ""}`}>
+              <div className="rpg-recipe-card-header">
+                <div>
                   <Typography fontWeight={1000}>{recipe.name}</Typography>
                   <Typography variant="body2" color="text.secondary">{recipe.description}</Typography>
-                  <Stack direction="row" gap={0.6} flexWrap="wrap" sx={{ mt: 0.8 }}>
-                    {Object.entries(recipe.inputs).map(([item, amount]) => (
-                      <Chip key={item} size="small" color={(inventory[item] || 0) >= amount ? "success" : "default"}
-                        label={`${amount} ${getItemDefinition(item).name} (${inventory[item] || 0})`} />
-                    ))}
-                  </Stack>
-                </Box>
-                <Button variant="contained" disabled={!available || !outputSpace}
-                  onClick={() => dispatch(craftRecipe({ recipeId: recipe.id, station: "inventory" }))}>
+                </div>
+                <Button
+                  variant="contained"
+                  disabled={!available || !outputSpace}
+                  onClick={() => dispatch(craftRecipe({ recipeId: recipe.id, station: "inventory" }))}
+                >
                   Craft
                 </Button>
+              </div>
+              <Stack direction="row" gap={0.6} flexWrap="wrap" sx={{ mt: 1.2 }}>
+                {Object.entries(recipe.inputs).map(([item, amount]) => (
+                  <Chip
+                    key={item}
+                    size="small"
+                    color={(inventory[item] || 0) >= amount ? "success" : "default"}
+                    label={`${amount} ${getItemDefinition(item).name} · ${inventory[item] || 0} owned`}
+                  />
+                ))}
               </Stack>
-            </Box>
+            </article>
           );
         })}
-      </Stack>
+      </div>
     </Box>
   );
 }
 
-export default function InventoryDialog({ open, onClose, station = { type: "inventory", key: null } }) {
-  const inventory = useSelector((state) => state.world.inventory);
-  const furnaces = useSelector((state) => state.world.furnaces);
-  const stationType = station?.type || "inventory";
-  const stationKey = station?.key || null;
-  const defaultTab = stationType === "crafting_table" ? "workbench" : stationType === "furnace" ? "furnace" : "inventory";
-  const [tab, setTab] = useState(defaultTab);
-
-  useEffect(() => {
-    if (open) setTab(defaultTab);
-  }, [defaultTab, open]);
-
-  const allowedTabs = stationType === "furnace"
-    ? ["furnace", "inventory", "armor", "stats"]
-    : stationType === "crafting_table"
-      ? ["workbench", "inventory", "armor", "stats"]
-      : ["inventory", "crafting", "armor", "stats"];
-
+function RpgTabRail({ tabs, value, onChange }) {
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xl" disableRestoreFocus PaperProps={{ sx: { minHeight: { md: "78vh" } } }}>
-      <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        {iconForStation(stationType)} {titleForStation(stationType)}
-      </DialogTitle>
-      <DialogContent>
-        <Tabs value={tab} onChange={(_, value) => setTab(value)} variant="scrollable" scrollButtons="auto" sx={{ mb: 2, borderBottom: "1px solid rgba(255,255,255,.12)" }}>
-          {allowedTabs.includes("inventory") && <Tab value="inventory" icon={<Inventory2Icon />} iconPosition="start" label="Inventory" />}
-          {allowedTabs.includes("crafting") && <Tab value="crafting" icon={<BuildIcon />} iconPosition="start" label="Crafting" />}
-          {allowedTabs.includes("workbench") && <Tab value="workbench" icon={<BuildIcon />} iconPosition="start" label="3×3 Workbench" />}
-          {allowedTabs.includes("furnace") && <Tab value="furnace" icon={<LocalFireDepartmentIcon />} iconPosition="start" label="Smelting" />}
-          {allowedTabs.includes("armor") && <Tab value="armor" icon={<SecurityIcon />} iconPosition="start" label="Armor" />}
-          {allowedTabs.includes("stats") && <Tab value="stats" icon={<AutoGraphIcon />} iconPosition="start" label="Stats" />}
-        </Tabs>
-        <Box sx={{ maxHeight: { xs: "68vh", md: "66vh" }, overflowY: "auto", pr: 0.6 }}>
-          {tab === "inventory" && <InventoryTab />}
-          {tab === "crafting" && <InventoryCraftingPanel inventory={inventory} />}
-          {tab === "workbench" && <CraftingTablePanel inventory={inventory} />}
-          {tab === "furnace" && <FurnacePanel stationKey={stationKey} inventory={inventory} job={stationKey ? furnaces[stationKey] : null} />}
-          {tab === "armor" && <ArmorPanel />}
-          {tab === "stats" && <StatsPanel />}
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Close menu</Button>
-      </DialogActions>
-    </Dialog>
+    <nav className="rpg-tab-rail" aria-label="Character menu sections">
+      {tabs.map((tabId) => {
+        const tab = TABS[tabId];
+        const Icon = tab.icon;
+        return (
+          <button
+            type="button"
+            key={tabId}
+            className={`rpg-tab-button ${value === tabId ? "is-active" : ""}`}
+            onClick={() => onChange(tabId)}
+          >
+            <span className="rpg-tab-glyph"><Icon fontSize="small" /></span>
+            <span className="rpg-tab-copy">
+              <strong>{tab.label}</strong>
+              <small>{tab.subtitle}</small>
+            </span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
+
+function InventoryDialog({ open, onClose, station = { type: "inventory", key: null } }) {
+  const inventory = useSelector((state) => state.world.inventory);
+  const furnaces = useSelector((state) => state.world.furnaces);
+  const level = useSelector((state) => state.world.progression.level);
+  const stationType = station?.type || "inventory";
+  const stationKey = station?.key || null;
+  const defaultTab = stationType === "crafting_table" ? "workbench" : stationType === "furnace" ? "furnace" : stationType === "colony_box" ? "colony" : "inventory";
+  const [tab, setTab] = useState(defaultTab);
+  const [effectsReady, setEffectsReady] = useState(false);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    setTab(defaultTab);
+    setEffectsReady(false);
+    const reveal = () => setEffectsReady(true);
+    const timer = window.setTimeout(reveal, 120);
+    const onKeyDown = (event) => {
+      if (event.code !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      onClose?.();
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [defaultTab, onClose, open]);
+
+  const allowedTabs = stationType === "furnace"
+    ? ["furnace", "inventory", "armor", "stats", "perks", "quests", "codex", "performance", "backups"]
+    : stationType === "crafting_table"
+      ? ["workbench", "inventory", "armor", "stats", "perks", "quests", "codex", "performance", "backups"]
+      : stationType === "colony_box"
+        ? ["colony", "inventory", "crafting", "armor", "stats", "quests", "performance"]
+        : ["inventory", "crafting", "armor", "stats", "perks", "quests", "codex", "performance", "backups"];
+
+  const activeMeta = TABS[tab] || TABS.inventory;
+
+  if (!open) return null;
+
+  return (
+    <div className="fast-inventory-overlay" role="dialog" aria-modal="true" aria-label={titleForStation(stationType)}>
+      <section className={`rpg-menu-shell fast-inventory-shell ${effectsReady ? "menu-effects-ready" : ""} station-${stationType} tab-${tab}`}>
+        <header className="rpg-menu-header">
+          <div className="rpg-menu-brand">
+            <span className="rpg-menu-sigil">VF</span>
+            <div>
+              <Typography variant="overline">Voxel Frontier · Level {level}</Typography>
+              <Typography variant="h4" fontWeight={1000}>{titleForStation(stationType)}</Typography>
+            </div>
+          </div>
+          <div className="rpg-menu-active-title">
+            <strong>{activeMeta.label}</strong>
+            <span>{activeMeta.subtitle}</span>
+          </div>
+          <IconButton onClick={onClose} className="rpg-close-button" aria-label="Close menu">
+            <CloseIcon />
+          </IconButton>
+        </header>
+
+        <div className="rpg-menu-body">
+          <RpgTabRail tabs={allowedTabs} value={tab} onChange={setTab} />
+          <main className="rpg-menu-content">
+            <div className="rpg-content-scroll">
+              <Suspense fallback={<MenuPanelFallback />}>
+                {tab === "inventory" && <InventoryTab />}
+                {tab === "crafting" && <InventoryCraftingPanel inventory={inventory} />}
+                {tab === "workbench" && <CraftingTablePanel inventory={inventory} />}
+                {tab === "furnace" && <FurnacePanel stationKey={stationKey} inventory={inventory} job={stationKey ? furnaces[stationKey] : null} />}
+                {tab === "armor" && <ArmorPanel />}
+                {tab === "stats" && <StatsPanel />}
+                {tab === "perks" && <PerksPanel />}
+                {tab === "quests" && <QuestJournalPanel />}
+                {tab === "codex" && <CodexPanel />}
+                {tab === "performance" && <PerformancePanel />}
+                {tab === "backups" && <WorldBackupPanel />}
+                {tab === "colony" && <ColonyPanel stationKey={stationKey} />}
+              </Suspense>
+            </div>
+          </main>
+        </div>
+
+        <footer className="rpg-menu-footer">
+          <span>Esc / E closes the menu</span>
+          <span>Simulation paused · furnaces continue</span>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
+export default memo(InventoryDialog);
