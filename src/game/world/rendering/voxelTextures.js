@@ -122,6 +122,10 @@ function drawPixelPattern(ctx, type, face, base, seed) {
         ctx.fillRect(x, y, 1, 1);
       }
     }
+    if (type === "apple_leaves") {
+      ctx.fillStyle = "#d84238";
+      [[3,5],[11,3],[7,10],[13,12]].forEach(([x,y], index) => { ctx.fillRect(x,y,2,2); if (index % 2 === 0) { ctx.fillStyle="#f06a52"; ctx.fillRect(x,y,1,1); ctx.fillStyle="#d84238"; } });
+    }
   }
 
   if (type.endsWith("_ore")) drawOre(ctx, type, seed + 1701);
@@ -169,6 +173,56 @@ function drawPixelPattern(ctx, type, face, base, seed) {
     }
   }
 
+  if (type === "lava") {
+    ctx.fillStyle = "#e13f16";
+    ctx.fillRect(0, 0, 16, 16);
+    ctx.fillStyle = "#ffb52e";
+    for (let y = 1; y < 16; y += 4) {
+      ctx.fillRect((y * 3) % 7, y, 8, 1);
+      ctx.fillRect((y * 5) % 11, Math.min(15, y + 1), 4, 1);
+    }
+    ctx.fillStyle = "#8d1f16";
+    for (let i = 0; i < 12; i += 1) ctx.fillRect(Math.floor(randomFrom(seed, i + 1900) * 16), Math.floor(randomFrom(seed, i + 2000) * 16), 1, 1);
+  }
+
+  if (type === "basalt") {
+    ctx.fillStyle = "#302f35";
+    ctx.fillRect(0, 0, 16, 16);
+    ctx.strokeStyle = "#56535e";
+    ctx.lineWidth = 1;
+    [2, 6, 10, 14].forEach((x, index) => {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + (index % 2 ? -1 : 1), 16);
+      ctx.stroke();
+    });
+    ctx.fillStyle = "rgba(18,17,22,.45)";
+    for (let i = 0; i < 18; i += 1) ctx.fillRect(Math.floor(randomFrom(seed, i + 2020) * 16), Math.floor(randomFrom(seed, i + 2060) * 16), 1, 2);
+  }
+
+  if (type === "black_sand" || type === "volcanic_ash") {
+    ctx.fillStyle = type === "black_sand" ? "#3b3738" : "#57515a";
+    ctx.fillRect(0, 0, 16, 16);
+    for (let i = 0; i < 42; i += 1) {
+      const light = randomFrom(seed, i + 2070) > 0.55;
+      ctx.fillStyle = light ? (type === "black_sand" ? "#5a5250" : "#746b76") : "#29272d";
+      ctx.fillRect(Math.floor(randomFrom(seed, i + 2080) * 16), Math.floor(randomFrom(seed, i + 2090) * 16), 1, 1);
+    }
+  }
+
+  if (type === "obsidian") {
+    ctx.fillStyle = "#20162f";
+    ctx.fillRect(0, 0, 16, 16);
+    ctx.strokeStyle = "#5a3877";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 6; i += 1) {
+      ctx.beginPath();
+      ctx.moveTo(Math.floor(randomFrom(seed, i + 2100) * 16), 0);
+      ctx.lineTo(Math.floor(randomFrom(seed, i + 2200) * 16), 16);
+      ctx.stroke();
+    }
+  }
+
   if (type === "seagrass" || type === "kelp") {
     ctx.clearRect(0, 0, 16, 16);
     ctx.fillStyle = type === "kelp" ? "#246f49" : "#39a86e";
@@ -184,7 +238,8 @@ function drawPixelPattern(ctx, type, face, base, seed) {
   const meadowPlant = ["tall_grass", "meadow_grass_0", "meadow_grass_1", "meadow_grass_2"].includes(type);
   const flowerPlant = ["wildflower", "yellow_flower_0", "yellow_flower_1", "yellow_flower_2"].includes(type);
   const wheatPlant = type.startsWith("wheat_crop_");
-  if (type === "vine" || meadowPlant || flowerPlant || wheatPlant || type === "snow_layer") {
+  const caveMushroom = ["brown_mushroom", "red_mushroom"].includes(type);
+  if (type === "vine" || meadowPlant || flowerPlant || wheatPlant || caveMushroom || type === "cobweb" || type === "snow_layer") {
     ctx.clearRect(0, 0, 16, 16);
     if (type === "snow_layer") {
       ctx.fillStyle = "#f5fbff";
@@ -198,6 +253,18 @@ function drawPixelPattern(ctx, type, face, base, seed) {
         if (index % 2 === 0) ctx.fillRect(Math.max(0, x - 2), 3 + index * 2, 4, 1);
         ctx.fillRect(x + 1, 8 + (index % 3), 3, 1);
       });
+    } else if (type === "cobweb") {
+      ctx.strokeStyle = "rgba(245,248,250,.95)";
+      ctx.lineWidth = 1;
+      [[0,8,16,8],[8,0,8,16],[0,0,16,16],[16,0,0,16]].forEach(([x1,y1,x2,y2]) => { ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke(); });
+      [3,6].forEach((radius) => { ctx.beginPath();ctx.arc(8,8,radius,0,Math.PI*2);ctx.stroke(); });
+    } else if (caveMushroom) {
+      ctx.fillStyle = "#dfc7a2";
+      ctx.fillRect(7,7,2,9);
+      ctx.fillStyle = type === "red_mushroom" ? "#bd3740" : "#7c5a43";
+      ctx.fillRect(3,5,10,3); ctx.fillRect(5,3,6,2); ctx.fillRect(1,7,14,2);
+      ctx.fillStyle = type === "red_mushroom" ? "#f0d9bd" : "#c6a27d";
+      ctx.fillRect(5,5,1,1);ctx.fillRect(9,4,1,1);ctx.fillRect(12,7,1,1);
     } else {
       const definition = BLOCK_TYPES[type] || {};
       const stage = Number.isFinite(definition.growthStage) ? definition.growthStage : 2;
@@ -272,6 +339,85 @@ function drawPixelPattern(ctx, type, face, base, seed) {
     ctx.fillRect(4, 2, 8, 2);
   }
 
+
+  if (["oak_window", "oak_door", "oak_door_ew", "oak_door_open", "oak_door_ew_open", "oak_stairs", "stone_stairs", "ladder", "oak_fence", "fence_post", "oak_fence_gate", "oak_fence_gate_open", "hay_bale", "oak_table", "oak_chair", "bookshelf", "flower_pot", "woven_rug", "wall_lantern", "arcane_table", "wardstone", "arcane_lantern", "frontier_bed", "boss_altar", "titan_trophy", "ember_trophy", "void_trophy"].includes(type)) {
+    if (type === "oak_window") {
+      ctx.fillStyle = "#9ed9e5"; ctx.fillRect(2, 2, 12, 12);
+      ctx.fillStyle = "rgba(232,252,255,.75)"; ctx.fillRect(3, 3, 4, 4); ctx.fillRect(9, 8, 4, 4);
+      ctx.fillStyle = "#6e4529"; ctx.fillRect(0, 0, 16, 2); ctx.fillRect(0, 14, 16, 2); ctx.fillRect(0, 0, 2, 16); ctx.fillRect(14, 0, 2, 16); ctx.fillRect(7, 1, 2, 14);
+    } else if (["oak_door", "oak_door_ew", "oak_door_open", "oak_door_ew_open", "oak_stairs", "ladder", "oak_fence", "fence_post", "oak_fence_gate", "oak_fence_gate_open", "oak_table", "oak_chair"].includes(type)) {
+      ctx.fillStyle = "#6d4228"; [3,8,13].forEach((x) => ctx.fillRect(x,0,1,16));
+      ctx.fillStyle = "#c38a50"; ctx.fillRect(1,2,14,1); ctx.fillRect(1,12,14,1);
+      if (type.startsWith("oak_door")) { ctx.fillStyle="#d8b55e"; ctx.fillRect(12,8,2,2); }
+    } else if (type === "hay_bale") {
+      ctx.fillStyle="#c8ab3c"; ctx.fillRect(0,0,16,16); ctx.strokeStyle="#e4cd65"; ctx.lineWidth=1;
+      for(let y=1;y<16;y+=3){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(16,y+2);ctx.stroke();}
+      ctx.fillStyle="#8e6d27"; ctx.fillRect(0,4,16,2); ctx.fillRect(0,11,16,2);
+    } else if (type === "stone_stairs") {
+      ctx.fillStyle="#70767a"; ctx.fillRect(0,0,16,16); ctx.strokeStyle="#4c5155"; ctx.lineWidth=1;
+      ctx.strokeRect(1,1,14,14); ctx.beginPath();ctx.moveTo(0,6);ctx.lineTo(16,6);ctx.moveTo(0,11);ctx.lineTo(16,11);ctx.stroke();
+    } else if (type === "bookshelf") {
+      ctx.fillStyle="#50301e"; ctx.fillRect(0,0,16,16); ctx.fillStyle="#a36a38"; [0,7,14].forEach((y)=>ctx.fillRect(0,y,16,2));
+      ["#b6534e","#4f79a8","#d0a34a","#6d9a56"].forEach((color,index)=>{ctx.fillStyle=color;ctx.fillRect(2+index*3,2,2,5);ctx.fillRect(3+index*3,9,2,5);});
+    } else if (type === "woven_rug") {
+      ctx.fillStyle="#6d2634"; ctx.fillRect(0,0,16,16); ctx.fillStyle="#d28a63"; for(let y=1;y<16;y+=4)ctx.fillRect(0,y,16,1); ctx.fillStyle="#f1c47d"; for(let x=2;x<16;x+=5)ctx.fillRect(x,0,1,16);
+    } else if (["arcane_table","wardstone","arcane_lantern"].includes(type)) {
+      ctx.fillStyle = type === "wardstone" ? "#655384" : "#3d2857"; ctx.fillRect(0,0,16,16);
+      ctx.strokeStyle="#79e8f2"; ctx.lineWidth=1; ctx.strokeRect(3,3,10,10); ctx.beginPath();ctx.moveTo(8,1);ctx.lineTo(14,8);ctx.lineTo(8,15);ctx.lineTo(2,8);ctx.closePath();ctx.stroke();
+      ctx.fillStyle="#c7f8ff"; ctx.fillRect(7,7,2,2);
+    } else if (type === "flower_pot") {
+      ctx.fillStyle="#b75d45"; ctx.fillRect(3,3,10,3); ctx.fillStyle="#7f3d31"; ctx.fillRect(5,6,6,8); ctx.fillStyle="#d68060"; ctx.fillRect(6,7,2,5);
+    } else if (type === "wall_lantern") {
+      ctx.fillStyle="#29241e"; ctx.fillRect(2,2,12,12); ctx.fillStyle="#f7bf55"; ctx.fillRect(5,4,6,8); ctx.fillStyle="#fff0a6"; ctx.fillRect(7,5,2,5);
+    } else if (type === "frontier_bed") {
+      ctx.fillStyle="#552d31"; ctx.fillRect(0,0,16,16); ctx.fillStyle="#a44958"; ctx.fillRect(1,1,14,9); ctx.fillStyle="#d9c6a3"; ctx.fillRect(2,10,12,5); ctx.fillStyle="#e9ddc5"; ctx.fillRect(3,11,5,3); ctx.fillStyle="#6b402b"; ctx.fillRect(0,14,16,2);
+    } else if (type === "boss_altar") {
+      ctx.fillStyle="#21172e"; ctx.fillRect(0,0,16,16); ctx.fillStyle="#644787"; ctx.fillRect(1,1,14,14); ctx.strokeStyle="#d4a9ff"; ctx.lineWidth=1; ctx.strokeRect(3,3,10,10); ctx.beginPath();ctx.moveTo(8,1);ctx.lineTo(15,8);ctx.lineTo(8,15);ctx.lineTo(1,8);ctx.closePath();ctx.stroke(); ctx.fillStyle="#f7d273";ctx.fillRect(7,7,2,2);
+    } else if (["titan_trophy","ember_trophy","void_trophy"].includes(type)) {
+      const accent=type==="titan_trophy"?"#d7ad55":type==="ember_trophy"?"#ff7a42":"#c58cff"; ctx.fillStyle="#242126";ctx.fillRect(0,0,16,16);ctx.fillStyle=accent;ctx.fillRect(2,2,12,2);ctx.fillRect(2,12,12,2);ctx.fillRect(7,4,2,8);ctx.fillRect(4,7,8,2);
+    }
+  }
+
+  if (["ancient_brick", "carved_rune_brick"].includes(type)) {
+    ctx.fillStyle = shade(base, -0.3);
+    [0, 8].forEach((y) => ctx.fillRect(0, y, 16, 1));
+    ctx.fillRect(7, 0, 1, 8); ctx.fillRect(3, 9, 1, 7); ctx.fillRect(12, 9, 1, 7);
+    ctx.fillStyle = shade(base, 0.18); ctx.fillRect(1, 1, 5, 1); ctx.fillRect(9, 9, 3, 1);
+    if (type === "carved_rune_brick") {
+      ctx.strokeStyle = "#9eefff"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(8,2);ctx.lineTo(12,7);ctx.lineTo(8,13);ctx.lineTo(4,7);ctx.closePath();ctx.stroke();
+      ctx.fillStyle="#d9fbff";ctx.fillRect(7,7,2,2);
+    }
+  }
+  if (type === "fossil_block") {
+    ctx.strokeStyle="#e6d9b8";ctx.lineWidth=2;ctx.lineCap="round";
+    ctx.beginPath();ctx.moveTo(2,13);ctx.lineTo(13,3);ctx.stroke();
+    [[2,13],[5,14],[13,3],[11,1]].forEach(([x,y])=>{ctx.fillStyle="#ddd0ad";ctx.fillRect(x-1,y-1,3,3);});
+    ctx.strokeStyle="#b8a67f";ctx.beginPath();ctx.arc(8,8,5,0.4,5.6);ctx.stroke();
+  }
+  if (["treasure_chest", "storage_chest", "enchantment_table", "paleontology_lab", "village_bell"].includes(type)) {
+    if (["treasure_chest", "storage_chest"].includes(type)) {
+      ctx.fillStyle=type === "storage_chest" ? "#78491f" : "#71431e";ctx.fillRect(0,0,16,16);ctx.fillStyle=type === "storage_chest" ? "#c8873d" : "#bd7b32";[2,8,14].forEach((y)=>ctx.fillRect(0,y,16,1));ctx.fillStyle=type === "storage_chest" ? "#d7dde1" : "#e7c15e";ctx.fillRect(7,5,2,6);
+    } else if (type === "enchantment_table") {
+      ctx.fillStyle="#27163a";ctx.fillRect(0,0,16,16);ctx.strokeStyle="#c98aff";ctx.strokeRect(2,2,12,12);ctx.beginPath();ctx.moveTo(2,8);ctx.lineTo(8,2);ctx.lineTo(14,8);ctx.lineTo(8,14);ctx.closePath();ctx.stroke();
+    } else if (type === "paleontology_lab") {
+      ctx.fillStyle="#5b5248";ctx.fillRect(0,0,16,16);ctx.fillStyle="#c7bd9e";ctx.fillRect(2,3,12,9);ctx.strokeStyle="#5d8f7a";ctx.beginPath();ctx.moveTo(4,10);ctx.lineTo(7,6);ctx.lineTo(10,9);ctx.lineTo(13,4);ctx.stroke();ctx.fillStyle="#79d4a5";ctx.fillRect(7,6,2,2);
+    } else {
+      ctx.fillStyle="#725722";ctx.fillRect(0,0,16,16);ctx.fillStyle="#e4b94c";ctx.beginPath();ctx.arc(8,8,5,0,Math.PI*2);ctx.fill();ctx.fillStyle="#6f511b";ctx.fillRect(7,3,2,8);
+    }
+  }
+
+  if (type === "cracked_bone_brick") {
+    ctx.fillStyle = "#8b806b";
+    [0,8].forEach((y)=>ctx.fillRect(0,y,16,1)); ctx.fillRect(7,0,1,8); ctx.fillRect(3,9,1,7); ctx.fillRect(12,9,1,7);
+    ctx.strokeStyle="#e6dcc4";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(2,13);ctx.lineTo(6,9);ctx.lineTo(10,12);ctx.lineTo(14,5);ctx.stroke();
+    ctx.fillStyle="#d9cfb8";[[2,13],[14,5],[6,9]].forEach(([x,y])=>ctx.fillRect(x-1,y-1,2,2));
+  }
+  if (type === "monster_spawner") {
+    ctx.fillStyle="#211a2a";ctx.fillRect(0,0,16,16);
+    ctx.strokeStyle="#6f6380";ctx.lineWidth=1;[1,5,10,14].forEach((x)=>{ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,16);ctx.stroke();});[1,8,14].forEach((y)=>{ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(16,y);ctx.stroke();});
+    ctx.fillStyle="#bd6cff";ctx.fillRect(6,6,4,4);ctx.fillStyle="#f0ccff";ctx.fillRect(7,7,2,2);
+  }
+
   if (type === "bedrock") {
     ctx.fillStyle = "#111315";
     for (let index = 0; index < 28; index += 1) {
@@ -283,18 +429,29 @@ function drawPixelPattern(ctx, type, face, base, seed) {
 }
 
 function createTexture(type, face) {
-  const key = `${type}:${face}`;
-  if (textureCache.has(key)) return textureCache.get(key);
   if (typeof document === "undefined") return null;
-
+  const requested = Number(localStorage.getItem("voxel:textureResolution") || 64);
+  const resolution = [32,64,96,128,160,192,224,256].reduce((best,value)=>Math.abs(value-requested)<Math.abs(best-requested)?value:best,64);
+  const key = `${type}:${face}:${resolution}`;
+  if (textureCache.has(key)) return textureCache.get(key);
   const canvas = document.createElement("canvas");
-  canvas.width = 32;
-  canvas.height = 32;
-  const ctx = canvas.getContext("2d");
-  ctx.imageSmoothingEnabled = false;
-  ctx.scale(2, 2);
+  canvas.width = resolution; canvas.height = resolution;
+  const ctx = canvas.getContext("2d"); ctx.imageSmoothingEnabled = false; ctx.scale(resolution / 16, resolution / 16);
   const base = faceBase(type, face);
-  drawPixelPattern(ctx, type, face, base, hashText(key));
+  const textureSeed = hashText(key);
+  drawPixelPattern(ctx, type, face, base, textureSeed);
+  if (resolution >= 64) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const detailCount = resolution >= 256 ? 1500 : resolution >= 192 ? 1050 : resolution >= 128 ? 620 : resolution >= 96 ? 300 : 160;
+    const grain = Math.max(1, Math.floor(resolution / 160));
+    for (let index = 0; index < detailCount; index += 1) {
+      const x = Math.floor(randomFrom(textureSeed, 3000 + index * 3) * resolution);
+      const y = Math.floor(randomFrom(textureSeed, 3001 + index * 3) * resolution);
+      const light = randomFrom(textureSeed, 3002 + index * 3) > 0.5;
+      ctx.fillStyle = light ? "rgba(255,255,255,.055)" : "rgba(0,0,0,.07)";
+      ctx.fillRect(x, y, grain, grain);
+    }
+  }
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
@@ -315,7 +472,9 @@ function faceName(index) {
 }
 
 export function getBlockMaterials(type) {
-  if (materialCache.has(type)) return materialCache.get(type);
+  const requested = typeof window === "undefined" ? 64 : Number(localStorage.getItem("voxel:textureResolution") || 64);
+  const cacheKey = `${type}:${requested}`;
+  if (materialCache.has(cacheKey)) return materialCache.get(cacheKey);
   const definition = BLOCK_TYPES[type] || {};
   const faceShade = [0.84, 0.73, 1, 0.57, 0.91, 0.78];
   const materials = Array.from({ length: 6 }, (_, index) => {
@@ -327,18 +486,20 @@ export function getBlockMaterials(type) {
       map,
       flatShading: true,
       transparent,
-      opacity: type.includes("leaves") ? 0.92 : type === "glass" ? 0.42 : type === "ice" ? 0.76 : type === "water" ? 0.58 : 1,
+      opacity: type.includes("leaves") ? 0.92 : type === "glass" || type === "oak_window" ? 0.55 : type === "ice" ? 0.76 : type === "water" ? 0.58 : type === "lava" ? 0.9 : 1,
       alphaTest: type.includes("leaves") || ["seagrass", "kelp", "vine", "tall_grass", "wildflower"].includes(type) || type.startsWith("meadow_grass_") || type.startsWith("yellow_flower_") || type.startsWith("wheat_crop_") ? 0.18 : 0,
-      depthWrite: !["glass", "ice", "water"].includes(type),
+      depthWrite: !["glass", "oak_window", "ice", "water", "lava"].includes(type),
       dithering: false,
     });
   });
-  materialCache.set(type, materials);
+  materialCache.set(cacheKey, materials);
   return materials;
 }
 
 export function getPlantMaterial(type) {
-  if (plantMaterialCache.has(type)) return plantMaterialCache.get(type);
+  const requested = typeof window === "undefined" ? 64 : Number(localStorage.getItem("voxel:textureResolution") || 64);
+  const cacheKey = `${type}:${requested}`;
+  if (plantMaterialCache.has(cacheKey)) return plantMaterialCache.get(cacheKey);
   const source = getBlockMaterials(type)[0];
   const material = source.clone();
   material.side = THREE.DoubleSide;
@@ -347,33 +508,48 @@ export function getPlantMaterial(type) {
   material.depthWrite = true;
   material.flatShading = true;
   material.needsUpdate = true;
-  plantMaterialCache.set(type, material);
+  plantMaterialCache.set(cacheKey, material);
   return material;
 }
 
-function drawCrackBranch(ctx, seed, originX, originY, length, depth, stage) {
-  if (depth <= 0 || length < 1.5) return;
-  let x = originX;
-  let y = originY;
-  const segments = 3 + Math.floor(randomFrom(seed, depth + 20) * 3);
-  let angle = randomFrom(seed, depth + 30) * Math.PI * 2;
+const STRAIGHT_CRACK_SEGMENTS = [
+  [32, 32, 32, 20],
+  [32, 20, 24, 12],
+  [32, 20, 42, 13],
+  [32, 32, 21, 38],
+  [21, 38, 12, 50],
+  [21, 38, 14, 30],
+  [32, 32, 44, 40],
+  [44, 40, 55, 34],
+  [44, 40, 49, 54],
+  [32, 32, 28, 48],
+  [28, 48, 20, 58],
+  [28, 48, 38, 60],
+  [32, 32, 46, 26],
+  [46, 26, 58, 24],
+  [46, 26, 52, 15],
+  [32, 20, 31, 6],
+  [24, 12, 15, 8],
+  [42, 13, 52, 7],
+  [12, 50, 7, 59],
+  [55, 34, 61, 29],
+  [49, 54, 55, 62],
+  [20, 58, 12, 63],
+  [58, 24, 63, 17],
+  [14, 30, 5, 25],
+];
 
+function strokeStraightCracks(ctx, segments, width, color, offsetX = 0, offsetY = 0) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = "square";
+  ctx.lineJoin = "miter";
   ctx.beginPath();
-  ctx.moveTo(x, y);
-  for (let index = 0; index < segments; index += 1) {
-    angle += (randomFrom(seed, index + depth * 31) - 0.5) * 0.95;
-    x += Math.cos(angle) * (length / segments);
-    y += Math.sin(angle) * (length / segments);
-    ctx.lineTo(x, y);
-  }
+  segments.forEach(([x1, y1, x2, y2]) => {
+    ctx.moveTo(x1 + offsetX, y1 + offsetY);
+    ctx.lineTo(x2 + offsetX, y2 + offsetY);
+  });
   ctx.stroke();
-
-  if (stage > 2 && depth > 1) {
-    drawCrackBranch(ctx, seed + 73, x, y, length * 0.58, depth - 1, stage);
-  }
-  if (stage > 5 && depth > 1) {
-    drawCrackBranch(ctx, seed + 149, originX + (x - originX) * 0.55, originY + (y - originY) * 0.55, length * 0.48, depth - 1, stage);
-  }
 }
 
 export function getCrackTexture(stageValue) {
@@ -386,18 +562,33 @@ export function getCrackTexture(stageValue) {
   canvas.height = 64;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, 64, 64);
-  ctx.strokeStyle = `rgba(18, 14, 12, ${0.64 + stage * 0.03})`;
-  ctx.lineWidth = 1.4 + stage * 0.12;
-  ctx.lineCap = "square";
-  ctx.lineJoin = "miter";
 
-  const branchCount = 1 + Math.floor(stage / 2);
-  for (let index = 0; index < branchCount; index += 1) {
-    const seed = 1709 + stage * 431 + index * 97;
-    const x = 32 + (randomFrom(seed, 1) - 0.5) * 14;
-    const y = 32 + (randomFrom(seed, 2) - 0.5) * 14;
-    drawCrackBranch(ctx, seed, x, y, 12 + stage * 2.7, 2 + Math.floor(stage / 3), stage);
-  }
+  // Reveal a fixed, angular fracture network in clean stages. Every mark is a
+  // straight line segment, so the damage reads like a voxel block splitting
+  // instead of a hand-drawn squiggle or circular HUD overlay.
+  const visibleCount = Math.min(
+    STRAIGHT_CRACK_SEGMENTS.length,
+    2 + stage * 2 + Math.floor(stage / 3)
+  );
+  const visibleSegments = STRAIGHT_CRACK_SEGMENTS.slice(0, visibleCount);
+  const strength = 0.68 + stage * 0.028;
+
+  // A one-pixel warm edge under the dark fracture gives the crack a recessed,
+  // industrial cut while preserving the nearest-neighbor voxel presentation.
+  strokeStraightCracks(
+    ctx,
+    visibleSegments,
+    2.6 + stage * 0.1,
+    `rgba(208, 181, 142, ${0.16 + stage * 0.012})`,
+    1,
+    1
+  );
+  strokeStraightCracks(
+    ctx,
+    visibleSegments,
+    1.45 + stage * 0.11,
+    `rgba(18, 14, 12, ${strength})`
+  );
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = THREE.NearestFilter;

@@ -8,9 +8,10 @@ const world = fs.readFileSync("src/features/world/worldSlice.js", "utf8");
 
 assert(mobs.includes("const MODEL_FORWARD_YAW = Math.PI"), "mob model forward-axis correction constant is missing");
 assert(mobs.includes("current.direction + MODEL_FORWARD_YAW"), "mob visual root is not corrected to face travel direction");
-assert(hand.includes("const baseX = portrait ? 0.3 : ultrawide ? 0.6 : 0.5"), "first-person arm was not repositioned for a believable third-person match");
-assert(hand.includes("const baseY = portrait ? -0.28 : -0.22"), "first-person arm is not raised to the matched pose");
-assert(hand.includes("model.rotation.set(-0.22 - swing * 0.58, 0.46 + swing * 0.16, -0.56 - twist * 0.46)"), "first-person arm believable pose is missing");
+assert(hand.includes("const baseX = portrait ? 0.27 : ultrawide ? 0.55 : 0.44"), "first-person arm was not repositioned for a believable third-person match");
+assert(hand.includes("const baseY = portrait ? -0.39 : -0.34"), "first-person arm is not raised to the matched pose");
+assert(hand.includes("const activeKind = animation.current.active ? animation.current.kind : \"idle\""), "weapon-specific first-person animation selection is missing");
+assert(hand.includes("model.rotation.set(-0.31 - swing * (activeKind === \"attack_spear\""), "weapon-specific first-person arm pose is missing");
 assert(hand.includes(`const SLEEVE_BASE = "#3f7d56";`), "first-person arm no longer matches third-person sleeve styling");
 assert(hud.includes("playerDamageFlashUntil"), "player damage HUD feedback is missing");
 assert(world.includes("playerDamageAmount"), "player damage event state is missing");

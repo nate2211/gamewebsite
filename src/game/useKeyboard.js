@@ -5,6 +5,8 @@ export default function useKeyboard() {
 
   useEffect(() => {
     const onKeyDown = (event) => {
+      const tag = event.target?.tagName?.toLowerCase?.();
+      if (tag === "input" || tag === "textarea" || tag === "select" || event.target?.isContentEditable) return;
       keysRef.current[event.code] = true;
       if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.code)) {
         event.preventDefault();

@@ -1,0 +1,16 @@
+{
+  "name": "Deepwild Foundries HD Source Pack",
+  "version": "22.0.0",
+  "license": "Original project source assets",
+  "atlasResolution": [
+    4096,
+    4096
+  ],
+  "atlases": [
+    "deepwild-cave-dungeon-materials-4096.png",
+    "deepwild-food-forage-materials-4096.png",
+    "deepwild-enhanced-mob-materials-4096.png"
+  ],
+  "purpose": "Editable source materials for underground structures, foods, forage, enhanced enemies, treasure, and cave props.",
+  "runtimeNote": "The game derives optimized procedural voxel textures from these source concepts; these files are retained for future art iteration."
+}

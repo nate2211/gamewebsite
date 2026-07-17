@@ -108,9 +108,89 @@ function HeldBlock({ itemId }) {
   );
 }
 
+function ArcaneWand({ definition }) {
+  const tier = definition.wandTier || 1;
+  const metal = tier >= 3 ? "#b8d8df" : tier >= 2 ? "#d48a5f" : "#8c633f";
+  const glow = tier >= 3 ? "#8af3ff" : tier >= 2 ? "#bca0ff" : "#7ddcff";
+  return (
+    <group rotation={[0.03, 0, -0.08]}>
+      <mesh position={[0, 0.02, 0]} scale={[0.1, 1.18, 0.1]}><boxGeometry args={[1, 1, 1]} /><FlatMaterial color="#68462f" /></mesh>
+      <mesh position={[-0.034, -0.08, -0.058]} scale={[0.024, 0.9, 0.018]}><boxGeometry args={[1, 1, 1]} /><FlatMaterial color="#c28d59" /></mesh>
+      {[0.28, 0.42].map((y) => <mesh key={y} position={[0, y, 0]} scale={[0.15, 0.07, 0.15]}><boxGeometry args={[1, 1, 1]} /><FlatMaterial color={metal} /></mesh>)}
+      <mesh position={[0, 0.68, 0]} rotation={[0, 0, Math.PI / 4]} scale={[0.24, 0.24, 0.18]}><octahedronGeometry args={[1, 0]} /><meshBasicMaterial color={glow} toneMapped={false} /></mesh>
+      <mesh position={[0, 0.68, 0]} scale={[0.34, 0.34, 0.25]}><octahedronGeometry args={[1, 0]} /><meshBasicMaterial color={glow} transparent opacity={0.16} depthWrite={false} toneMapped={false} /></mesh>
+      {tier >= 2 && <mesh position={[0, -0.48, 0]} scale={[0.18, 0.13, 0.18]}><boxGeometry args={[1, 1, 1]} /><FlatMaterial color={metal} /></mesh>}
+    </group>
+  );
+}
+
+
+function WeaponModel({ definition }) {
+  const kind = definition.weaponClass;
+  const metal = definition.color || "#c8cdd1";
+  const edge = new THREE.Color(metal).lerp(new THREE.Color("#ffffff"), 0.38).getStyle();
+  if (kind === "spear") return (
+    <group rotation={[0.04, 0, -0.06]}>
+      <mesh position={[0, 0.28, 0]} scale={[0.09, 1.85, 0.09]}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#795237" /></mesh>
+      <mesh position={[0, 1.35, 0]} rotation={[0,0,Math.PI/4]} scale={[0.24,0.58,0.14]}><octahedronGeometry args={[1,0]} /><FlatMaterial color={metal} /></mesh>
+      <mesh position={[-0.055, 0.38, -0.055]} scale={[0.02, 1.45, 0.018]}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#c3925e" /></mesh>
+    </group>
+  );
+  if (kind === "katana") return (
+    <group rotation={[0.03, 0, -0.1]}>
+      <mesh position={[0, -0.22, 0]} scale={[0.13, 0.75, 0.13]}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#27232a" /></mesh>
+      {[ -0.44, -0.27, -0.1 ].map((y) => <mesh key={y} position={[0,y,0]} scale={[0.15,0.035,0.15]}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#9a6258" /></mesh>)}
+      <mesh position={[0,0.19,0]} scale={[0.58,0.11,0.2]}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#c7a861" /></mesh>
+      <mesh position={[0.04,1.02,0]} rotation={[0,0,-0.045]} scale={[0.12,1.65,0.075]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={metal} /></mesh>
+      <mesh position={[-0.025,1.02,-0.052]} rotation={[0,0,-0.045]} scale={[0.025,1.48,0.018]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={edge} /></mesh>
+      <mesh position={[0.11,1.83,0]} rotation={[0,0,0.32]} scale={[0.12,0.4,0.075]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={metal} /></mesh>
+    </group>
+  );
+  if (kind === "greatsword") return (
+    <group rotation={[0.02, 0, -0.08]}>
+      <mesh position={[0,-0.35,0]} scale={[0.16,0.72,0.16]}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#4f3426" /></mesh>
+      <mesh position={[0,0.12,0]} scale={[0.92,0.14,0.24]}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#8d6a45" /></mesh>
+      <mesh position={[0,1.05,0]} scale={[0.36,1.8,0.14]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={metal} /></mesh>
+      <mesh position={[-0.14,1.05,-0.08]} scale={[0.055,1.55,0.02]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={edge} /></mesh>
+      <mesh position={[0,2.03,0]} rotation={[0,0,Math.PI/4]} scale={[0.34,0.34,0.14]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={metal} /></mesh>
+    </group>
+  );
+  if (kind === "halberd") return (
+    <group rotation={[0.02,0,-0.06]}>
+      <mesh position={[0,0.38,0]} scale={[0.1,2.05,0.1]}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#62422e" /></mesh>
+      <mesh position={[0,1.57,0]} scale={[0.16,0.7,0.14]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={metal} /></mesh>
+      <mesh position={[0.4,1.42,0]} rotation={[0,0,-0.38]} scale={[0.72,0.52,0.16]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={metal} /></mesh>
+      <mesh position={[0.66,1.52,-0.095]} rotation={[0,0,-0.38]} scale={[0.05,0.42,0.018]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={edge} /></mesh>
+      <mesh position={[0,2.02,0]} rotation={[0,0,Math.PI/4]} scale={[0.2,0.5,0.14]}><octahedronGeometry args={[1,0]} /><FlatMaterial color={metal} /></mesh>
+    </group>
+  );
+  if (kind === "warhammer") return (
+    <group rotation={[0.01,0,-0.07]}>
+      <mesh position={[0,0.25,0]} scale={[0.13,1.72,0.13]}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#60402d" /></mesh>
+      <mesh position={[0,1.17,0]} scale={[1.0,0.48,0.52]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={metal} /></mesh>
+      <mesh position={[-0.48,1.17,-0.2]} scale={[0.07,0.34,0.04]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={edge} /></mesh>
+      <mesh position={[0.58,1.17,0]} scale={[0.25,0.3,0.34]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={metal} /></mesh>
+      <mesh position={[0,-0.64,0]} scale={[0.22,0.16,0.22]}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#8e6847" /></mesh>
+    </group>
+  );
+  if (kind === "scythe") return (
+    <group rotation={[0.02,0,-0.08]}>
+      <mesh position={[0,0.35,0]} scale={[0.1,2.15,0.1]}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#62422e" /></mesh>
+      <mesh position={[0.36,1.55,0]} rotation={[0,0,-0.62]} scale={[0.78,0.16,0.13]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={metal} /></mesh>
+      <mesh position={[0.86,1.81,0]} rotation={[0,0,-1.0]} scale={[0.72,0.14,0.11]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={metal} /></mesh>
+      <mesh position={[1.16,2.18,-0.07]} rotation={[0,0,-1.24]} scale={[0.48,0.08,0.035]}><boxGeometry args={[1,1,1]} /><FlatMaterial color={edge} /></mesh>
+      <mesh position={[0,-0.72,0]} scale={[0.18,0.16,0.18]}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#8d6441" /></mesh>
+    </group>
+  );
+  return null;
+}
+
 function HeldItem({ itemId }) {
   if (!itemId) return null;
   const definition = getItemDefinition(itemId);
+
+  if (definition.arcaneFocus) return <ArcaneWand definition={definition} />;
+  if (definition.weaponClass) return <WeaponModel definition={definition} />;
 
   if (definition.category === "tool") {
     return (
@@ -136,7 +216,7 @@ function HeldItem({ itemId }) {
   return <mesh geometry={HELD_BLOCK_GEOMETRY} scale={0.72}><FlatMaterial color={definition.color || "#ffffff"} /></mesh>;
 }
 
-function PixelBlockArm({ handRef }) {
+function PixelBlockArm({ handRef, detail = "high" }) {
   return (
     <group rotation={[-0.1, 0.36, -0.34]}>
       <mesh position={[0.02, -0.58, 0.08]} rotation={[0.08, 0.06, -0.05]} scale={[0.34, 0.48, 0.36]} frustumCulled={false}>
@@ -151,6 +231,21 @@ function PixelBlockArm({ handRef }) {
         <boxGeometry args={[1, 1, 1]} />
         <FlatMaterial color={SLEEVE_DARK} />
       </mesh>
+      {detail !== "standard" && (<>
+        <mesh position={[-0.095, -0.48, 0.12]} rotation={[0.08, 0.06, -0.05]} scale={[0.055, 0.16, 0.1]} frustumCulled={false}><boxGeometry args={[1,1,1]} /><FlatMaterial color={SLEEVE_LIGHT} /></mesh>
+        <mesh position={[0.13, -0.42, 0.02]} rotation={[0.08, 0.06, -0.05]} scale={[0.05, 0.13, 0.09]} frustumCulled={false}><boxGeometry args={[1,1,1]} /><FlatMaterial color={SLEEVE_DARK} /></mesh>
+      </>)}
+      {["ultra", "cinematic"].includes(detail) && (<>
+        <mesh position={[-0.02,-0.72,0.15]} scale={[0.22,0.055,0.08]} frustumCulled={false}><boxGeometry args={[1,1,1]} /><FlatMaterial color={SLEEVE_LIGHT} /></mesh>
+        <mesh position={[0.015,-0.78,0.12]} scale={[0.18,0.04,0.07]} frustumCulled={false}><boxGeometry args={[1,1,1]} /><FlatMaterial color={SLEEVE_DARK} /></mesh>
+      </>)}
+      {detail === "cinematic" && (<>
+        {[-0.12, -0.04, 0.04, 0.12].map((x, index) => (
+          <mesh key={`sleeve-stitch-${x}`} position={[x, -0.63 + index * 0.018, 0.195]} scale={[0.028, 0.045, 0.024]} frustumCulled={false}><boxGeometry args={[1,1,1]} /><FlatMaterial color={index % 2 ? SLEEVE_DARK : SLEEVE_LIGHT} /></mesh>
+        ))}
+        <mesh position={[0.03, -0.87, 0.11]} scale={[0.3, 0.045, 0.12]} frustumCulled={false}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#7d573f" /></mesh>
+        <mesh position={[0.03, -0.87, -0.02]} scale={[0.24, 0.036, 0.04]} frustumCulled={false}><boxGeometry args={[1,1,1]} /><FlatMaterial color="#c6a45f" /></mesh>
+      </>)}
 
       <mesh position={[0.03, -0.19, 0.07]} rotation={[0.16, 0.12, -0.08]} scale={[0.28, 0.52, 0.3]} frustumCulled={false}>
         <boxGeometry args={[1, 1, 1]} />
@@ -221,6 +316,7 @@ export default function FirstPersonViewModel({ actionAnimationRef, visible = tru
     return selectedItem && (state.world.inventory[selectedItem] || 0) > 0 ? selectedItem : null;
   });
   const animation = useRef({ active: false, kind: "mine", startedAt: 0, strength: 1 });
+  const modelDetail = useMemo(() => (typeof window === "undefined" ? "high" : localStorage.getItem("voxel:modelDetail") || "high"), []);
 
   useEffect(() => {
     actionAnimationRef.current = {
@@ -231,12 +327,26 @@ export default function FirstPersonViewModel({ actionAnimationRef, visible = tru
           startedAt: performance.now(),
           strength: THREE.MathUtils.clamp(strength, 0.5, 1.45),
         };
-        multiplayerSession.setLocalAnimation(kind, kind === "attack" ? 320 : 460);
+        multiplayerSession.setLocalAnimation(kind, kind.startsWith("attack") ? (kind === "attack_warhammer" ? 780 : kind === "attack_greatsword" ? 700 : kind === "attack_halberd" ? 560 : kind === "attack_scythe" ? 520 : 380) : kind === "cast" ? 520 : kind === "step" ? 280 : 460);
         invalidate();
       },
     };
     return () => { actionAnimationRef.current = null; };
   }, [actionAnimationRef, invalidate]);
+
+  useEffect(() => {
+    const onAutoStep = (event) => {
+      animation.current = {
+        active: true,
+        kind: "step",
+        startedAt: performance.now(),
+        strength: THREE.MathUtils.clamp(0.72 + Number(event?.detail?.height || 0) * 0.18, 0.72, 0.98),
+      };
+      invalidate();
+    };
+    window.addEventListener("voxel:auto-step", onAutoStep);
+    return () => window.removeEventListener("voxel:auto-step", onAutoStep);
+  }, [invalidate]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -270,33 +380,75 @@ export default function FirstPersonViewModel({ actionAnimationRef, visible = tru
       const aspect = Math.max(0.55, size.width / Math.max(1, size.height));
       const portrait = aspect < 1.05;
       const ultrawide = aspect > 2.15;
-      const baseX = portrait ? 0.3 : ultrawide ? 0.6 : 0.5;
-      const baseY = portrait ? -0.28 : -0.22;
-      const baseZ = portrait ? -1.5 : ultrawide ? -1.28 : -1.34;
+      const baseX = portrait ? 0.27 : ultrawide ? 0.55 : 0.44;
+      const baseY = portrait ? -0.39 : -0.34;
+      const baseZ = portrait ? -1.58 : ultrawide ? -1.38 : -1.46;
       const idleBob = animateEnabled ? Math.sin(clock.elapsedTime * 2.35) * 0.012 : 0;
       const idleSway = animateEnabled ? Math.sin(clock.elapsedTime * 1.55) * 0.014 : 0;
       let swing = 0;
       let thrust = 0;
       let twist = 0;
+      let recoil = 0;
 
       if (animateEnabled && animation.current.active) {
-        const duration = animation.current.kind === "attack" ? 245 : animation.current.kind === "use" ? 270 : 360;
+        const kind = animation.current.kind;
+        const duration = kind === "attack_warhammer" ? 770 : kind === "attack_greatsword" ? 690 : kind === "attack_halberd" ? 560 : kind === "attack_scythe" ? 510 : kind === "attack_spear" ? 360 : kind === "attack_katana" ? 300 : kind === "attack" ? 245 : kind === "use" ? 290 : kind === "cast" ? 520 : kind === "step" ? 275 : 360;
         const progress = THREE.MathUtils.clamp((performance.now() - animation.current.startedAt) / duration, 0, 1);
-        const strike = Math.sin(progress * Math.PI);
+        const anticipation = THREE.MathUtils.smoothstep(progress, 0, 0.22);
+        const strike = Math.sin(Math.pow(progress, 0.78) * Math.PI);
+        const followThrough = Math.sin(Math.min(1, Math.max(0, (progress - 0.18) / 0.82)) * Math.PI);
+        const impact = Math.exp(-Math.pow((progress - 0.48) / 0.105, 2));
+        const settle = Math.sin(progress * Math.PI * 3.2) * (1 - progress);
         swing = strike * animation.current.strength;
-        thrust = animation.current.kind === "attack" ? strike * 0.2 : strike * 0.055;
-        twist = animation.current.kind === "use" ? -strike * 0.34 : strike * 0.82;
+        recoil = (impact * 0.12 + settle * 0.035) * animation.current.strength;
+        if (kind === "attack_spear") {
+          thrust = strike * 0.46;
+          twist = -0.12 + followThrough * 0.18;
+          swing *= 0.35;
+        } else if (kind === "attack_katana") {
+          thrust = strike * 0.12;
+          twist = -anticipation * 0.42 + followThrough * 1.45;
+          swing *= 1.08;
+        } else if (kind === "attack_greatsword") {
+          thrust = strike * 0.17;
+          twist = -anticipation * 1.05 + followThrough * 1.65;
+          swing *= 1.24;
+        } else if (kind === "attack_halberd") {
+          thrust = strike * 0.2;
+          twist = -anticipation * 0.7 + followThrough * 1.8;
+          swing *= 1.18;
+        } else if (kind === "attack_warhammer") {
+          thrust = strike * 0.18;
+          twist = -anticipation * 1.18 + followThrough * 1.42;
+          swing *= 1.42;
+          recoil *= 1.75;
+        } else if (kind === "attack_scythe") {
+          thrust = strike * 0.16;
+          twist = -anticipation * 0.82 + followThrough * 2.15;
+          swing *= 1.26;
+          recoil *= 1.18;
+        } else if (kind === "step") {
+          swing = Math.sin(progress * Math.PI) * 0.16 * animation.current.strength;
+          thrust = -Math.sin(progress * Math.PI) * 0.055;
+          twist = settle * 0.22;
+          recoil = Math.sin(progress * Math.PI) * 0.075;
+        } else {
+          thrust = kind === "attack" ? strike * 0.2 : kind === "cast" ? strike * 0.13 : strike * 0.055;
+          twist = kind === "use" ? -strike * 0.34 : kind === "cast" ? -strike * 0.72 + Math.sin(progress * Math.PI * 4) * 0.08 : strike * 0.82;
+        }
         if (progress >= 1) animation.current.active = false;
       }
 
       // Camera-space coordinates: +X is screen-right, +Y is screen-up, and -Z
       // points into the view. Keeping this rig independent from the world camera
       // removes axis inversions and FOV-dependent hand drift.
-      model.position.set(baseX - swing * 0.15 + idleSway, baseY - swing * 0.1 + idleBob, baseZ - thrust);
-      // Rest higher on screen, roll clockwise toward the right, and pitch the
-      // knuckles upward while preserving the full mining/attack arc.
-      model.rotation.set(-0.22 - swing * 0.58, 0.46 + swing * 0.16, -0.56 - twist * 0.46);
-      model.scale.setScalar(portrait ? 0.48 : ultrawide ? 0.58 : 0.54);
+      const activeKind = animation.current.active ? animation.current.kind : "idle";
+      const spearThrust = activeKind === "attack_spear" ? thrust : 0;
+      model.position.set(baseX - swing * (activeKind === "attack_spear" ? 0.045 : activeKind === "attack_scythe" ? 0.16 : 0.13) + idleSway, baseY - swing * (activeKind === "attack_greatsword" || activeKind === "attack_warhammer" ? 0.16 : 0.085) + idleBob - recoil, baseZ - thrust - spearThrust * 0.22 + recoil * 0.18);
+      // Anticipation, impact, and follow-through keep the camera-space hand
+      // readable while matching the shoulder direction of the third-person rig.
+      model.rotation.set(-0.31 - swing * (activeKind === "attack_spear" ? 0.16 : activeKind === "attack_greatsword" || activeKind === "attack_warhammer" ? 0.78 : 0.54), 0.38 + swing * (activeKind === "attack_halberd" || activeKind === "attack_scythe" ? 0.28 : 0.14), -0.45 - twist * 0.42 + recoil * 0.14);
+      model.scale.setScalar(portrait ? 0.44 : ultrawide ? 0.53 : 0.49);
       if (handRef.current) handRef.current.rotation.z = -0.08 + swing * 0.16;
       if (itemRef.current) itemRef.current.rotation.set(-0.02 + swing * 0.14, 0.16 + swing * 0.1, -0.12);
     }
@@ -315,8 +467,8 @@ export default function FirstPersonViewModel({ actionAnimationRef, visible = tru
   return createPortal(
     <group ref={rootRef} visible={visible} matrixAutoUpdate>
       <group ref={modelRef} frustumCulled={false}>
-        <PixelBlockArm handRef={handRef} />
-        <group ref={itemRef} position={[0.03, 0.36, -0.08]} rotation={[0.01, 0.14, -0.1]} scale={0.68} frustumCulled={false}>
+        <PixelBlockArm handRef={handRef} detail={modelDetail} />
+        <group ref={itemRef} position={[0.04, 0.34, -0.1]} rotation={[0.01, 0.14, -0.1]} scale={0.66} frustumCulled={false}>
           <HeldItem itemId={usableItem} />
         </group>
       </group>

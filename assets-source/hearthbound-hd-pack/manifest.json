@@ -1,0 +1,50 @@
+{
+  "pack": "Voxel Frontier Hearthbound HD",
+  "version": "20.0.0",
+  "resolution": 4096,
+  "tileSize": 512,
+  "atlases": [
+    {
+      "file": "character-voxel-materials-4096.png",
+      "seed": 1201,
+      "title": "PLAYER + BODY MATERIALS",
+      "tiles": 64,
+      "bytes": 16046584
+    },
+    {
+      "file": "colonist-professions-4096.png",
+      "seed": 2303,
+      "title": "COLONIST PROFESSIONS",
+      "tiles": 64,
+      "bytes": 16009755
+    },
+    {
+      "file": "enemy-creature-voxel-materials-4096.png",
+      "seed": 3407,
+      "title": "ENEMIES + CREATURES",
+      "tiles": 64,
+      "bytes": 16076218
+    },
+    {
+      "file": "boss-rune-materials-4096.png",
+      "seed": 4513,
+      "title": "BOSS RUNES + TROPHIES",
+      "tiles": 64,
+      "bytes": 16985226
+    },
+    {
+      "file": "housing-furniture-materials-4096.png",
+      "seed": 5623,
+      "title": "HOUSING + FURNITURE",
+      "tiles": 64,
+      "bytes": 16181930
+    },
+    {
+      "file": "advanced-weapon-materials-4096.png",
+      "seed": 6731,
+      "title": "WEAPONS + BOSS LOOT",
+      "tiles": 64,
+      "bytes": 16042828
+    }
+  ]
+}

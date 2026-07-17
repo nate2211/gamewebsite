@@ -3,11 +3,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRef } from "react";
 import {
   addColonyResources,
+  advanceColonyConstruction,
   applyColonyFrame,
   applyCropGrowth,
   assignColonyAnimals,
   breedColonyAnimal,
   mobCombatHit,
+  maintainColonyStation,
   plantCrop,
   respawnColonyWorker,
 } from "../../features/world/worldSlice";
@@ -20,6 +22,7 @@ import {
 } from "../config/colony";
 import { BLOCK_TYPES } from "../config/blockTypes";
 import { MOB_TYPES } from "../config/mobTypes";
+import { hasPerk } from "../config/perks";
 import { worldRuntime } from "../core/worldRuntime";
 import { findFarmPlot } from "../farming/farmUtils";
 
@@ -45,6 +48,7 @@ export default function ColonySystem({ enabled = true }) {
   const dispatch = useDispatch();
   const colony = useSelector((state) => state.world.colony);
   const mobs = useSelector((state) => state.world.mobs);
+  const progression = useSelector((state) => state.world.progression);
   const accumulator = useRef(0);
   const runtimeMap = useRef(new Map());
 
@@ -77,13 +81,21 @@ export default function ColonySystem({ enabled = true }) {
       const runtime = runtimeMap.current.get(station.id) || { target: null, searchAt: 0, actionAt: 0, patrol: Math.random() * Math.PI * 2 };
       runtimeMap.current.set(station.id, runtime);
       let next = { ...worker };
+      const home = stationHome(station);
+      if (hasPerk(progression, "guardian_aura") && next.health < next.maxHealth && distance2d(next, home) <= 8) {
+        next.health = Math.min(next.maxHealth, next.health + delta * 0.45);
+      }
       let status = station.enabled ? "Working" : "Work paused";
       let progress = 0;
-      const home = stationHome(station);
       if (!station.enabled) {
         workers[worker.id] = moveWorker(next, home, 0.8, delta);
         stations[station.id] = { status, progress, workerState: "idle" };
         return;
+      }
+
+      if (station.maintenancePolicy === "auto" && station.health < station.maxHealth * 0.72 && now >= (runtime.maintenanceAt || 0)) {
+        runtime.maintenanceAt = now + 12000;
+        dispatch(maintainColonyStation({ stationId: station.id }));
       }
 
       const immediateThreat = mobs
@@ -93,7 +105,9 @@ export default function ColonySystem({ enabled = true }) {
         .sort((a, b) => a.distance - b.distance)[0];
       if (immediateThreat && station.job !== "guard") {
         const guardNearby = colony.stations.some((other) => other.job === "guard" && !other.destroyed && other.workerState !== "dead" && distance2d(other.position, worker) <= 12);
-        if (station.job === "miner" && !guardNearby && immediateThreat.distance <= 4.5) {
+        const orderedToDefend = station.threatMode === "defend" || station.orderMode === "defend";
+        const orderedToFlee = station.threatMode === "flee";
+        if (!orderedToFlee && (orderedToDefend || station.job === "miner") && (!guardNearby || orderedToDefend) && immediateThreat.distance <= 6) {
           next = moveWorker(next, immediateThreat.mob, 1.15, delta);
           status = `Defending against ${MOB_TYPES[immediateThreat.mob.type]?.name || immediateThreat.mob.type}`;
           progress = 1;
@@ -105,7 +119,7 @@ export default function ColonySystem({ enabled = true }) {
           stations[station.id] = { status, progress, workerState: "defending" };
           return;
         }
-        if (["farmer", "rancher", "fisher"].includes(station.job) || !guardNearby) {
+        if (orderedToFlee || ["farmer", "rancher", "fisher", "builder"].includes(station.job) || !guardNearby) {
           const fleeTarget = { x: home.x + (home.x - immediateThreat.mob.x) * 0.8, y: home.y, z: home.z + (home.z - immediateThreat.mob.z) * 0.8 };
           next = moveWorker(next, fleeTarget, 1.75, delta);
           workers[worker.id] = next;
@@ -126,13 +140,19 @@ export default function ColonySystem({ enabled = true }) {
           progress = 1 - hostile.distance / COLONY_GUARD_RADIUS;
           if (hostile.distance <= 1.6 && now >= runtime.actionAt) {
             runtime.actionAt = now + 850;
-            dispatch(mobCombatHit({ targetId: hostile.mob.id, amount: 5, friendlyAttack: true }));
+            const guardDamage = 5 * (hasPerk(progression, "war_banner") ? 1.18 : 1);
+            dispatch(mobCombatHit({ targetId: hostile.mob.id, amount: guardDamage, friendlyAttack: true }));
             dispatch(addColonyResources({ stationId: station.id, totals: { hostilesStopped: 1 } }));
           }
+        } else if (station.orderMode === "hold") {
+          next = moveWorker(next, home, 0.8, delta);
+          status = "Holding the assigned guard post";
+          progress = 0.25;
         } else {
-          runtime.patrol += delta * 0.35;
-          next = moveWorker(next, { x: home.x + Math.sin(runtime.patrol) * 4, y: home.y, z: home.z + Math.cos(runtime.patrol) * 4 }, 0.9, delta);
-          status = "Patrolling the settlement";
+          runtime.patrol += delta * (station.orderMode === "escort" ? 0.52 : 0.35);
+          const patrolRadius = station.orderMode === "escort" ? 7 : 4;
+          next = moveWorker(next, { x: home.x + Math.sin(runtime.patrol) * patrolRadius, y: home.y, z: home.z + Math.cos(runtime.patrol) * patrolRadius }, 0.9, delta);
+          status = station.orderMode === "escort" ? "Escorting workers around the settlement" : "Patrolling the settlement";
           progress = 0.2;
         }
       } else if (station.job === "miner") {
@@ -148,7 +168,7 @@ export default function ColonySystem({ enabled = true }) {
           status = `Mining ${BLOCK_TYPES[runtime.target.type]?.name || runtime.target.type}`;
           progress = Math.max(0.08, 1 - distance / COLONY_WORK_RADIUS);
           if (distance <= 1.7 && now >= runtime.actionAt) {
-            runtime.actionAt = now + 2600;
+            runtime.actionAt = now + Math.max(1100, 2800 - (station.workPriority || 1) * 450);
             const removed = worldRuntime.removeBlock(runtime.target.key);
             if (removed) {
               const item = BLOCK_TYPES[removed.type]?.drop || (removed.type === "stone" ? "cobblestone" : null);
@@ -206,10 +226,41 @@ export default function ColonySystem({ enabled = true }) {
         next = moveWorker(next, target || home, 0.92, delta);
         status = managed.length ? `Caring for ${managed.length} animals` : "Looking for animals";
         progress = managed.length / COLONY_MAX_MANAGED_ANIMALS;
-        if (managed.length >= 2 && now >= runtime.actionAt && (colony.storage.wheat || 0) >= 2) {
+        if (managed.length && station.orderMode === "feed" && now >= runtime.actionAt && (colony.storage.hay_bale || 0) >= 1) {
+          runtime.actionAt = now + 18000;
+          dispatch(addColonyResources({ stationId: station.id, items: { hay_bale: -1 }, totals: { animalsManaged: managed.length }, message: `${station.workerName} fed the managed herd with hay` }));
+        } else if (managed.length >= 2 && now >= runtime.actionAt && (colony.storage.wheat || 0) >= 2) {
           runtime.actionAt = now + 30000;
           const parent = managed[Math.floor(Math.random() * managed.length)];
           dispatch(breedColonyAnimal({ stationId: station.id, type: parent.type, position: [parent.x + 0.6, parent.y, parent.z + 0.6] }));
+        }
+      } else if (station.job === "builder") {
+        const plan = Array.isArray(station.buildPlan) ? station.buildPlan : [];
+        const planIndex = Math.max(0, Number(station.buildIndex || 0));
+        const step = plan[planIndex];
+        if (!step) {
+          next = moveWorker(next, home, 0.82, delta);
+          status = station.houseCompleted ? "Maintaining completed house" : "Construction plan complete";
+          progress = 1;
+        } else {
+          const target = { x: step.position[0] + 0.5, y: step.position[1] + 0.5, z: step.position[2] + 0.5 };
+          next = moveWorker(next, target, 1.08, delta);
+          status = `Building ${String(step.phase || "house").replaceAll("_", " ")}`;
+          progress = plan.length ? planIndex / plan.length : 0;
+          if (distance2d(next, target) <= 1.8 && now >= runtime.actionAt) {
+            runtime.actionAt = now + Math.max(300, 760 - (station.workPriority || 1) * 140);
+            const existing = worldRuntime.getBlockTypeAt(...step.position);
+            const replaceable = new Set(["snow_layer", "tall_grass", "wildflower", "meadow_grass_0", "meadow_grass_1", "meadow_grass_2", "yellow_flower_0", "yellow_flower_1", "yellow_flower_2", "vine", "reeds", "seagrass", "kelp"]);
+            if (existing && replaceable.has(existing)) worldRuntime.removeBlock(`${step.position[0]},${step.position[1]},${step.position[2]}`);
+            const afterClear = worldRuntime.getBlockTypeAt(...step.position);
+            const placed = afterClear === step.type || (!afterClear && worldRuntime.setBlock(step.position, step.type));
+            if (placed) {
+              const completed = planIndex + 1 >= plan.length;
+              dispatch(advanceColonyConstruction({ stationId: station.id, position: step.position, type: step.type, phase: step.phase, planIndex, completed }));
+            } else {
+              status = `Construction blocked at ${step.position.join(", ")}`;
+            }
+          }
         }
       } else if (station.job === "fisher") {
         const water = worldRuntime.findBlocksNear(station.position, (type) => type === "water", 16, 20)[0];

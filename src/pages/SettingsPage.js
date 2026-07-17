@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   AppBar,
@@ -17,6 +17,7 @@ import {
   Switch,
   Toolbar,
   Typography,
+  Chip,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import MemoryIcon from "@mui/icons-material/Memory";
@@ -27,11 +28,45 @@ import {
   readMobDisplaySettings,
   saveMobDisplaySettings,
 } from "../game/config/mobDisplaySettings";
+import { DEFAULT_KEYBINDINGS, KEYBINDING_LABELS, formatKeyCode, readKeybindings, saveKeybindings } from "../game/config/keybindings";
 import {
   DEFAULT_RUNTIME_SETTINGS,
   readRuntimeSettings,
   saveRuntimeSettings,
 } from "../game/config/runtimeSettings";
+
+
+function KeybindingEditor({ bindings, onChange }) {
+  const [listeningFor, setListeningFor] = useState(null);
+  useEffect(() => {
+    if (!listeningFor) return undefined;
+    const capture = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.code === "Escape") { setListeningFor(null); return; }
+      const duplicateAction = Object.keys(bindings).find((action) => action !== listeningFor && bindings[action] === event.code);
+      const next = { ...bindings, [listeningFor]: event.code };
+      if (duplicateAction) next[duplicateAction] = bindings[listeningFor];
+      onChange(next);
+      setListeningFor(null);
+    };
+    window.addEventListener("keydown", capture, true);
+    return () => window.removeEventListener("keydown", capture, true);
+  }, [bindings, listeningFor, onChange]);
+  return (
+    <Stack spacing={1.1}>
+      {Object.entries(KEYBINDING_LABELS).map(([action, label]) => (
+        <Stack key={action} direction="row" alignItems="center" justifyContent="space-between" gap={2}>
+          <Typography fontWeight={800}>{label}</Typography>
+          <Button variant={listeningFor === action ? "contained" : "outlined"} onClick={() => setListeningFor(action)} sx={{ minWidth: 150 }}>
+            {listeningFor === action ? "Press a key…" : formatKeyCode(bindings[action])}
+          </Button>
+        </Stack>
+      ))}
+      <Typography variant="caption" color="text.secondary">Selecting a key already in use swaps the two actions. Escape cancels rebinding.</Typography>
+    </Stack>
+  );
+}
 
 function SettingSlider({ label, value, min, max, step = 1, marks = false, onChange, suffix = "" }) {
   return (
@@ -60,6 +95,9 @@ export default function SettingsPage() {
   const [showMobHealthBars, setShowMobHealthBars] = useState(initialMobSettings.showHealthBars);
   const [showMobHealthNumbers, setShowMobHealthNumbers] = useState(initialMobSettings.showHealthNumbers);
   const [engine, setEngine] = useState(readRuntimeSettings);
+  const [keybindings, setKeybindings] = useState(readKeybindings);
+  const [textureResolution, setTextureResolution] = useState(Number(localStorage.getItem("voxel:textureResolution") || 64));
+  const [modelDetail, setModelDetail] = useState(localStorage.getItem("voxel:modelDetail") || "high");
   const setEngineValue = (key, value) => setEngine((current) => ({ ...current, [key]: value }));
 
   const save = () => {
@@ -72,6 +110,9 @@ export default function SettingsPage() {
       showHealthNumbers: showMobHealthNumbers,
     });
     saveRuntimeSettings(engine);
+    saveKeybindings(keybindings);
+    localStorage.setItem("voxel:textureResolution", String(textureResolution));
+    localStorage.setItem("voxel:modelDetail", modelDetail);
     navigate("/");
   };
 
@@ -104,6 +145,19 @@ export default function SettingsPage() {
               </FormControl>
               <SettingSlider label="Camera field of view" value={engine.cameraFov} min={55} max={100} step={1} suffix="°" onChange={(value) => setEngineValue("cameraFov", value)} />
               <FormControlLabel control={<Switch checked={showFps} onChange={(event) => setShowFps(event.target.checked)} />} label="Show live FPS counter" />
+            </Stack>
+          </Paper>
+
+
+          <Paper sx={{ p: 3 }}>
+            <Stack spacing={2.2}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
+                <Typography variant="h6" fontWeight={900}>Controls and keybindings</Typography>
+                <Chip label="Stored locally" size="small" />
+              </Stack>
+              <Alert severity="info">The in-game top-left control card has been removed. All keyboard controls are listed and remappable here.</Alert>
+              <KeybindingEditor bindings={keybindings} onChange={setKeybindings} />
+              <Button variant="outlined" startIcon={<RestartAltIcon />} onClick={() => setKeybindings({ ...DEFAULT_KEYBINDINGS })} sx={{ alignSelf: "flex-start" }}>Reset keybindings</Button>
             </Stack>
           </Paper>
 
@@ -155,7 +209,9 @@ export default function SettingsPage() {
 
           <Paper sx={{ p: 3 }}>
             <Stack spacing={2.4}>
-              <Typography variant="h6" fontWeight={900}>Simulation detail</Typography>
+              <Typography variant="h6" fontWeight={900}>Simulation and visual detail</Typography>
+              <SettingSlider label="Voxel texture resolution" value={textureResolution} min={32} max={256} step={32} suffix=" px" onChange={setTextureResolution} />
+              <FormControl fullWidth><InputLabel id="model-detail-label">Voxel model detail</InputLabel><Select labelId="model-detail-label" label="Voxel model detail" value={modelDetail} onChange={(event) => setModelDetail(event.target.value)}><MenuItem value="standard">Standard</MenuItem><MenuItem value="high">High · more voxel parts</MenuItem><MenuItem value="ultra">Ultra · dense decorative parts</MenuItem><MenuItem value="cinematic">Cinematic · maximum voxel density</MenuItem></Select></FormControl>
               <SettingSlider label="Particle density" value={engine.particleDensity} min={0.25} max={1.5} step={0.25} suffix="×" onChange={(value) => setEngineValue("particleDensity", value)} />
               <SettingSlider label="Creature density" value={engine.creatureDensity} min={0.5} max={1.5} step={0.25} suffix="×" onChange={(value) => setEngineValue("creatureDensity", value)} />
               <FormControl fullWidth>

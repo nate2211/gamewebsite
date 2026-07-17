@@ -10,6 +10,7 @@ import {
   placeBlock,
   placeBoat,
   setSelectedIndex,
+  toggleFenceGate,
 } from "../features/world/worldSlice";
 import { BLOCK_TYPES, ITEM_TYPES, getMiningProfile } from "./blockTypes";
 import { SEA_LEVEL } from "./worldGenerator";
@@ -121,7 +122,8 @@ export default function InteractionController({
       if (removed) {
         dispatch(breakBlock({ key: blockTarget.key, blockType: removed.type, toolId: mining.toolId }));
       }
-      mining.held = false;
+      // Preserve the held state so the next block under the crosshair becomes
+      // the next mining target without requiring another click.
       clearMining(false);
       miningVisualRef.current = {
         mode: "burst",
@@ -163,6 +165,16 @@ export default function InteractionController({
 
         if (usableSelectedItem === "boat" && target?.type === "water") {
           dispatch(placeBoat({ position: [target.position[0], SEA_LEVEL + 0.25, target.position[2]] }));
+          return;
+        }
+
+        if (target && ["oak_fence_gate", "oak_fence_gate_open"].includes(target.type)) {
+          miningRef.current.held = false;
+          clearMining();
+          const nextType = target.type === "oak_fence_gate" ? "oak_fence_gate_open" : "oak_fence_gate";
+          if (worldRuntime.replaceBlock(target.position, nextType)) {
+            dispatch(toggleFenceGate({ key: target.key, position: target.position, type: nextType }));
+          }
           return;
         }
 

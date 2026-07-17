@@ -1,0 +1,36 @@
+{
+  "chair_high": {
+    "parts": 12,
+    "features": [
+      "three seat slats",
+      "three back rails",
+      "four legs",
+      "two braces"
+    ]
+  },
+  "table_high": {
+    "parts": 10,
+    "features": [
+      "layered top",
+      "four legs",
+      "four cross braces"
+    ]
+  },
+  "physical_weapon_drop": {
+    "parts": 3,
+    "features": [
+      "handle",
+      "guard",
+      "blade/head"
+    ]
+  },
+  "physical_resource_drop": {
+    "parts": 4,
+    "features": [
+      "clustered voxel shards",
+      "spin",
+      "bounce",
+      "ground settling"
+    ]
+  }
+}

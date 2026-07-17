@@ -36,7 +36,7 @@ const checks = [
   [itemIcon.includes('preloadItemIcons') && !itemIcon.includes('/assets/items/'), 'prewarmed generated item icons without 404 requests'],
   [blocks.includes('PLANT_GROWTH') && blocks.includes('grass_seeds') && blocks.includes('flower_seeds'), 'seed and growth definitions'],
   [blocks.includes('meadow_grass_0') && blocks.includes('meadow_grass_2') && blocks.includes('yellow_flower_2'), 'physical plant growth blocks'],
-  [generator.includes('TERRAIN_GENERATOR_VERSION = 14') && generator.includes('groundType === "grass"'), 'regenerated static grass-top terrain'],
+  [generator.includes('TERRAIN_GENERATOR_VERSION = 22') && generator.includes('groundType === "grass"'), 'regenerated static grass-top terrain'],
   [!generator.includes('blocks[plantKey] = { type: "wildflower" }') && !generator.includes('blocks[plantKey] = { type: "tall_grass" }'), 'legacy purple/flat plants removed from generation'],
   [renderer.includes('createVoxelPlantGeometry') && renderer.includes('createVoxelVineGeometry'), 'true voxel plant and vine geometry'],
   [renderer.includes('!terrainVisuallyStable && <TerrainSurfaceShell') && !renderer.includes('GrassCapInstances'), 'startup-only fallback shell and authoritative grass cube tops'],

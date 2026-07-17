@@ -14,7 +14,7 @@ import {
   getPlantStageDuration,
 } from "../../game/config/blockTypes";
 import { MOB_TYPES, createMob, rollMobLoot } from "../../game/config/mobTypes";
-import { blockKey } from "../../game/utils/worldUtils";
+import { blockKey, parseBlockKey } from "../../game/utils/worldUtils";
 import {
   COLONY_BOX_TO_JOB,
   COLONY_DEFAULT_STATE,
@@ -30,6 +30,8 @@ import { ARMOR_SLOTS, EMPTY_ARMOR, getArmorDefense, reduceDamageWithArmor } from
 import { getArmorSetBonus } from "../../game/config/armorSets";
 import { hasPerk } from "../../game/config/perks";
 import { DEFAULT_METRICS, QUESTS, getQuestProgress } from "../../game/config/quests";
+import { ARCANE_RESEARCH_BY_ID, canUnlockResearch, cloneArcana, getWandManaMultiplier } from "../../game/config/arcana";
+import { DINOSAUR_TYPES, ENCHANTMENTS, VILLAGE_QUESTS, enchantmentApplies, getTreasureLoot, seededUnit } from "../../game/config/adventure";
 import {
   DEFAULT_PROGRESSION,
   STAT_KEYS,
@@ -38,6 +40,10 @@ import {
   getStrengthDamageMultiplier,
   getCraftingSpeedMultiplier,
 } from "../../game/config/progression";
+import { DEFAULT_HOUSING_STATE, HOUSING_RESIDENT_NAMES, HOUSING_ROLES, cloneHousingState } from "../../game/config/housing";
+import { BOSS_SUMMONS, DEFAULT_BOSS_STATE, cloneBossState } from "../../game/config/bosses";
+import { createBuilderHousePlan } from "../../game/config/deepwild";
+import { FACTION_QUESTS, cloneFactionState } from "../../game/config/factions";
 
 const DEFAULT_PLAYER = { x: 0, y: 12, z: 0 };
 
@@ -88,6 +94,12 @@ function createInitialState() {
     armor: { ...EMPTY_ARMOR },
     armorDurability: {},
     progression: cloneProgression(),
+    arcana: cloneArcana(),
+    enchantments: {},
+    openedTreasureChests: [],
+    villageQuests: { accepted: [], claimed: [] },
+    factions: cloneFactionState(),
+    archaeology: { analyzed: 0, dnaCreated: 0, eggsSpliced: 0, dinosaursRevived: 0 },
     metrics: { ...DEFAULT_METRICS },
     claimedQuests: [],
     levelUpEvent: 0,
@@ -104,8 +116,12 @@ function createInitialState() {
     worldTime: WORLD_START_TIME,
     mobs: [],
     mount: null,
+    seated: null,
     furnaces: {},
+    storageChests: {},
     colony: cloneColonyState(COLONY_DEFAULT_STATE),
+    housing: cloneHousingState(DEFAULT_HOUSING_STATE),
+    bosses: cloneBossState(DEFAULT_BOSS_STATE),
     crops: [],
     droppedItems: [],
     fishing: { active: false, bite: false, message: "", caught: 0 },
@@ -177,6 +193,23 @@ function damageTool(state, toolId, amount = 1) {
   }
 }
 
+function getEnchantmentLevel(state, itemId, enchantmentId) {
+  const stored = Number(state.enchantments?.[itemId]?.[enchantmentId] || 0);
+  const builtIn = Number(ITEM_TYPES[itemId]?.preEnchanted?.[enchantmentId] || 0);
+  return Math.max(stored, builtIn);
+}
+
+function damageEquipmentWithEnchant(state, itemId, amount = 1) {
+  const tempered = getEnchantmentLevel(state, itemId, "durability");
+  const preserveChance = Math.min(0.72, tempered * 0.18);
+  if (Math.random() < preserveChance) return;
+  damageTool(state, itemId, amount);
+}
+
+function villageQuestProgress(state, quest) {
+  return Math.min(quest.target, Number(state.metrics?.[quest.metric] || 0));
+}
+
 const MOB_DEATH_ANIMATION_MS = 1750;
 
 function beginMobDeath(state, index, defeatedBy = "player") {
@@ -202,6 +235,28 @@ function beginMobDeath(state, index, defeatedBy = "player") {
       station.progress = 0;
     }
   }
+  if (defeated.housingBedKey) {
+    const bed = state.housing?.beds?.[defeated.housingBedKey];
+    if (bed) {
+      bed.status = "dead";
+      bed.respawnAt = now + 120000;
+      bed.residentId = null;
+      bed.deathCount = (bed.deathCount || 0) + 1;
+    }
+  }
+  if (MOB_TYPES[defeated.type]?.boss) {
+    if (!state.bosses.defeated.includes(defeated.type)) state.bosses.defeated.push(defeated.type);
+    if (state.bosses.activeBossId === defeated.id) {
+      state.bosses.activeBossId = null;
+      state.bosses.activeBossType = null;
+    }
+    state.mobs.forEach((candidate) => {
+      if (candidate.bossOwnerId !== defeated.id || candidate.dyingUntil) return;
+      candidate.health = 0;
+      candidate.dyingAt = now;
+      candidate.dyingUntil = now + 900;
+    });
+  }
 
   // Award drops at the start of the animation so the world can save safely
   // even if the player closes the tab before the visual collapse finishes.
@@ -226,6 +281,21 @@ function beginMobDeath(state, index, defeatedBy = "player") {
   return true;
 }
 
+
+function pushWorldDrop(state, item, amount, position, options = {}) {
+  if (!ITEM_TYPES[item] || amount <= 0) return;
+  const now = Date.now();
+  state.droppedItems.push({
+    id: options.id || `world-drop-${item}-${now}-${Math.floor(Math.random() * 1e9)}`,
+    item, amount: Math.max(1, Math.floor(amount)),
+    x: Number(position?.[0]) || 0, y: (Number(position?.[1]) || 0) + 0.32, z: Number(position?.[2]) || 0,
+    vx: Number(options.vx) || (Math.random() - 0.5) * 1.4,
+    vy: Number(options.vy) || 2.2 + Math.random() * 1.1,
+    vz: Number(options.vz) || (Math.random() - 0.5) * 1.4,
+    createdAt: now, pickupDelayUntil: now + (options.pickupDelay || 450),
+  });
+}
+
 const worldSlice = createSlice({
   name: "world",
   initialState,
@@ -246,6 +316,15 @@ const worldSlice = createSlice({
       state.armor = { ...EMPTY_ARMOR, ...(record.armor || {}) };
       state.armorDurability = { ...(record.armorDurability || {}) };
       state.progression = cloneProgression(record.progression);
+      state.arcana = cloneArcana(record.arcana);
+      state.enchantments = record.enchantments && typeof record.enchantments === "object" ? { ...record.enchantments } : {};
+      state.openedTreasureChests = Array.isArray(record.openedTreasureChests) ? [...record.openedTreasureChests] : [];
+      state.villageQuests = {
+        accepted: Array.isArray(record.villageQuests?.accepted) ? [...record.villageQuests.accepted] : [],
+        claimed: Array.isArray(record.villageQuests?.claimed) ? [...record.villageQuests.claimed] : [],
+      };
+      state.factions = cloneFactionState(record.factions);
+      state.archaeology = { analyzed: 0, dnaCreated: 0, eggsSpliced: 0, dinosaursRevived: 0, ...(record.archaeology || {}) };
       state.metrics = { ...DEFAULT_METRICS, ...(record.metrics || {}) };
       state.claimedQuests = Array.isArray(record.claimedQuests) ? [...record.claimedQuests] : [];
       state.levelUpEvent = 0;
@@ -261,8 +340,12 @@ const worldSlice = createSlice({
       state.worldTime = Number.isFinite(record.worldTime) ? record.worldTime : WORLD_START_TIME;
       state.mobs = Array.isArray(record.mobs) ? record.mobs : [];
       state.mount = record.mount || null;
+      state.seated = record.seated || null;
       state.furnaces = { ...(record.furnaces || {}) };
+      state.storageChests = { ...(record.storageChests || {}) };
       state.colony = cloneColonyState(record.colony || COLONY_DEFAULT_STATE);
+      state.housing = cloneHousingState(record.housing || DEFAULT_HOUSING_STATE);
+      state.bosses = cloneBossState(record.bosses || DEFAULT_BOSS_STATE);
       state.crops = sanitizeCropRecords(record.crops);
       state.droppedItems = Array.isArray(record.droppedItems) ? record.droppedItems.map((drop) => ({ ...drop })) : [];
       state.fishing = { active: false, bite: false, message: "", caught: 0, ...(record.fishing || {}) };
@@ -292,9 +375,142 @@ const worldSlice = createSlice({
     assignHotbarItem: (state, action) => {
       const { index = state.selectedIndex, itemId } = action.payload || {};
       if (index < 0 || index >= state.hotbar.length) return;
-      if (itemId && !ITEM_TYPES[itemId]) return;
+      if (itemId && (!ITEM_TYPES[itemId] || (state.inventory[itemId] || 0) <= 0)) return;
       state.hotbar[index] = itemId || null;
       state.selectedIndex = index;
+      state.revision += 1;
+    },
+    swapHotbarItems: (state, action) => {
+      const fromIndex = Number(action.payload?.fromIndex);
+      const toIndex = Number(action.payload?.toIndex);
+      if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex)) return;
+      if (fromIndex < 0 || toIndex < 0 || fromIndex >= state.hotbar.length || toIndex >= state.hotbar.length || fromIndex === toIndex) return;
+      [state.hotbar[fromIndex], state.hotbar[toIndex]] = [state.hotbar[toIndex], state.hotbar[fromIndex]];
+      state.selectedIndex = toIndex;
+      state.revision += 1;
+    },
+    clearHotbarSlot: (state, action) => {
+      const index = Number(action.payload?.index ?? action.payload);
+      if (!Number.isInteger(index) || index < 0 || index >= state.hotbar.length) return;
+      state.hotbar[index] = null;
+      state.revision += 1;
+    },
+    clearReplaceableBlock: (state, action) => {
+      const key = action.payload?.key || action.payload;
+      if (!key) return;
+      state.blockEdits[key] = null;
+      state.crops = state.crops.filter((crop) => crop.key !== key);
+      state.colony.crops = state.colony.crops.filter((crop) => crop.key !== key);
+      state.revision += 1;
+    },
+    unlockArcaneResearch: (state, action) => {
+      const researchId = action.payload?.researchId || action.payload;
+      const node = ARCANE_RESEARCH_BY_ID[researchId];
+      if (!node || !canUnlockResearch(state.arcana, researchId)) return;
+      state.arcana.researchPoints -= node.cost;
+      state.arcana.unlocked.push(researchId);
+      state.arcana.selectedSpell = researchId;
+      state.arcana.maxMana = Math.max(state.arcana.maxMana, 40 + node.tier * 6);
+      state.arcana.mana = state.arcana.maxMana;
+      state.message = `${node.name} research unlocked`;
+      state.revision += 1;
+    },
+    selectArcaneSpell: (state, action) => {
+      const researchId = action.payload?.researchId || action.payload;
+      if (!state.arcana.unlocked.includes(researchId)) return;
+      state.arcana.selectedSpell = researchId;
+      state.message = `${ARCANE_RESEARCH_BY_ID[researchId]?.name || "Spell"} readied`;
+      state.revision += 1;
+    },
+    cycleArcaneSpell: (state, action) => {
+      const unlocked = state.arcana.unlocked.filter((id) => ARCANE_RESEARCH_BY_ID[id]);
+      if (!unlocked.length) return;
+      const direction = Number(action.payload) < 0 ? -1 : 1;
+      const current = Math.max(0, unlocked.indexOf(state.arcana.selectedSpell));
+      state.arcana.selectedSpell = unlocked[(current + direction + unlocked.length) % unlocked.length];
+      state.message = `${ARCANE_RESEARCH_BY_ID[state.arcana.selectedSpell]?.name || "Spell"} readied`;
+    },
+    regenerateArcana: (state, action) => {
+      const amount = Math.max(0, Number(action.payload?.amount ?? action.payload) || 0);
+      state.arcana.mana = Math.min(state.arcana.maxMana, state.arcana.mana + amount);
+    },
+    castArcaneSpell: (state, action) => {
+      const payload = action.payload || {};
+      const spellId = payload.spellId || state.arcana.selectedSpell;
+      const node = ARCANE_RESEARCH_BY_ID[spellId];
+      if (!node || !state.arcana.unlocked.includes(spellId)) {
+        state.message = "Research this spell at an Arcane Worktable first";
+        return;
+      }
+      const wandId = payload.wandId;
+      const wand = ITEM_TYPES[wandId];
+      if (!wand?.arcaneFocus || (state.inventory[wandId] || 0) <= 0) {
+        state.message = "Equip a wand to channel arcana";
+        return;
+      }
+      const now = Number(payload.now) || Date.now();
+      if (now - state.arcana.lastCastAt < 180) return;
+      const manaCost = Math.max(1, Math.ceil(node.manaCost * getWandManaMultiplier(wand.wandTier || 1)));
+      if (state.arcana.mana < manaCost) {
+        state.message = `Not enough mana · ${manaCost} required`;
+        return;
+      }
+      if (["golemancy", "runic_sentinel"].includes(spellId) && (state.inventory.golem_core || 0) <= 0) {
+        state.message = "A Golem Core is required";
+        return;
+      }
+      state.arcana.mana -= manaCost;
+      state.arcana.lastCastAt = now;
+      state.arcana.casts += 1;
+      state.arcana.knowledge += Math.max(1, node.tier);
+      if (state.arcana.casts % 12 === 0) state.arcana.researchPoints += 1;
+
+      if (["spark_bolt", "chain_spark"].includes(spellId) && payload.mobId) {
+        const primaryIndex = state.mobs.findIndex((mob) => mob.id === payload.mobId && !mob.dyingUntil);
+        if (primaryIndex >= 0) {
+          const primary = state.mobs[primaryIndex];
+          const damage = (spellId === "chain_spark" ? 8 : 6) + (wand.wandTier || 1) * 2;
+          primary.health -= damage;
+          primary.hurtUntil = now + 420;
+          if (primary.health <= 0 && beginMobDeath(state, primaryIndex, "player")) {
+            state.metrics.mobsDefeated += 1;
+            if (MOB_TYPES[primary.type]?.hostile) state.metrics.hostilesDefeated += 1;
+          }
+          if (spellId === "chain_spark") {
+            const secondaryIndex = state.mobs.findIndex((mob, index) => index !== primaryIndex && !mob.dyingUntil && MOB_TYPES[mob.type]?.hostile && Math.hypot(mob.x - primary.x, mob.y - primary.y, mob.z - primary.z) <= 5);
+            if (secondaryIndex >= 0) {
+              state.mobs[secondaryIndex].health -= Math.ceil(damage * 0.68);
+              state.mobs[secondaryIndex].hurtUntil = now + 420;
+              if (state.mobs[secondaryIndex].health <= 0) beginMobDeath(state, secondaryIndex, "player");
+            }
+          }
+        }
+      } else if (spellId === "mending_light") {
+        state.health = Math.min(getMaxHealth(state.progression), state.health + 6 + (wand.wandTier || 1) * 2);
+      } else if (spellId === "verdant_touch") {
+        const target = payload.targetPosition || [state.player.x, state.player.y, state.player.z];
+        state.crops.forEach((crop) => {
+          if (Math.hypot(crop.position?.[0] - target[0], crop.position?.[1] - target[1], crop.position?.[2] - target[2]) <= 6) crop.nextGrowthAt = now;
+        });
+      } else if (["warding_stone", "arcane_lantern"].includes(spellId) && Array.isArray(payload.placePosition)) {
+        const type = spellId === "warding_stone" ? "wardstone" : "arcane_lantern";
+        state.blockEdits[blockKey(...payload.placePosition)] = { type };
+      } else if (["golemancy", "runic_sentinel"].includes(spellId)) {
+        state.inventory.golem_core -= 1;
+        const target = payload.targetPosition || [state.player.x + 2, state.player.y, state.player.z + 2];
+        const golem = createMob(`arcane-golem-${now}-${Math.floor(Math.random() * 1e6)}`, "arcane_golem", Number(target[0]) || 0, Number(target[1]) || 0, Number(target[2]) || 0);
+        golem.tamed = true;
+        golem.arcaneConstruct = true;
+        golem.customName = spellId === "runic_sentinel" ? "Runic Sentinel" : "Frontier Golem";
+        if (spellId === "runic_sentinel") {
+          golem.health = 58;
+          golem.maxHealth = 58;
+          golem.guardianTier = 3;
+        }
+        state.mobs.push(golem);
+        state.arcana.constructsBuilt += 1;
+      }
+      state.message = `${node.name} cast · ${manaCost} mana`;
       state.revision += 1;
     },
     breakBlock: (state, action) => {
@@ -305,7 +521,26 @@ const worldSlice = createSlice({
       const usableTool = (state.inventory[toolId] || 0) > 0 ? toolId : null;
       const profile = getMiningProfile(blockType, usableTool);
       state.blockEdits[key] = null;
-      if (blockType === "furnace") delete state.furnaces[key];
+      if (blockType === "furnace") {
+        const station = state.furnaces[key];
+        Object.entries(station?.outputInventory || {}).forEach(([item, amount]) => pushWorldDrop(state, item, amount, parseBlockKey(key)));
+        if (station?.input) pushWorldDrop(state, station.input, 1, parseBlockKey(key));
+        delete state.furnaces[key];
+      }
+      if (blockType === "storage_chest") {
+        const chest = state.storageChests[key];
+        Object.entries(chest?.items || {}).forEach(([item, amount]) => pushWorldDrop(state, item, amount, parseBlockKey(key)));
+        delete state.storageChests[key];
+      }
+      if (state.seated?.key === key) state.seated = null;
+      if (blockType === "frontier_bed" && state.housing.beds[key]) {
+        const residentId = state.housing.beds[key].residentId;
+        if (residentId) state.mobs = state.mobs.filter((mob) => mob.id !== residentId);
+        delete state.housing.beds[key];
+      }
+      if (blockType === "boss_altar" && state.bosses.activeBossId) {
+        state.message = "The active boss remains in the world even though its altar was broken";
+      }
       if (COLONY_BOX_TO_JOB[blockType]) {
         const station = state.colony.stations.find((candidate) => candidate.key === key);
         if (station) {
@@ -323,35 +558,51 @@ const worldSlice = createSlice({
       state.metrics.blocksMined += 1;
       if ((definition.hardness || 0) >= 1.5) state.metrics.hardBlocksMined += 1;
       if (blockType.endsWith("_ore")) state.metrics.oresMined += 1;
+      if (blockType === "fossil_block") state.metrics.fossilsRecovered = (state.metrics.fossilsRecovered || 0) + 1;
 
+      const dropPosition = parseBlockKey(key);
       if (profile.canHarvest && definition.drop) {
         if (!definition.dropChance || Math.random() <= definition.dropChance) {
-          addInventoryItem(state, definition.drop, 1);
-          if (blockType.endsWith("_ore") && hasPerk(state.progression, "fortune") && Math.random() < 0.15) {
-            addInventoryItem(state, definition.drop, 1);
-            state.message = `Fortune produced an extra ${getItemDefinition(definition.drop).name}`;
+          let amount = 1;
+          const enchantFortune = getEnchantmentLevel(state, usableTool, "fortune");
+          if ((blockType.endsWith("_ore") || blockType === "fossil_block") && ((hasPerk(state.progression, "fortune") && Math.random() < 0.15) || (enchantFortune > 0 && Math.random() < enchantFortune * 0.16))) {
+            amount += 1;
+            state.message = `Fortune released an extra ${getItemDefinition(definition.drop).name}`;
           }
+          pushWorldDrop(state, definition.drop, amount, dropPosition);
         }
         (definition.bonusDrops || []).forEach((bonus) => {
-          if (Math.random() <= (bonus.chance ?? 1)) addInventoryItem(state, bonus.item, bonus.amount || 1);
+          if (Math.random() <= (bonus.chance ?? 1)) pushWorldDrop(state, bonus.item, bonus.amount || 1, dropPosition);
         });
       } else if (!profile.canHarvest) {
         state.message = `A stronger ${definition.preferredTool || "tool"} is required for the drop`;
       }
 
       if (usableTool && ITEM_TYPES[usableTool]?.category === "tool") damageTool(state, usableTool, 1);
+      if (blockType.endsWith("_ore")) {
+        state.arcana.knowledge += Math.max(1, definition.requiredTier || 1);
+        if (Math.random() < 0.14 + (definition.requiredTier || 0) * 0.04) state.arcana.researchPoints += 1;
+      } else if ((definition.hardness || 0) >= 2.5 && Math.random() < 0.035) {
+        state.arcana.knowledge += 1;
+      }
       const oreBonus = blockType.endsWith("_ore") ? Math.max(2, definition.requiredTier * 2 + 1) : 0;
       const oreSenseMultiplier = blockType.endsWith("_ore") && hasPerk(state.progression, "ore_sense") ? 1.2 : 1;
       addExperienceToState(state, (Math.max(1, Math.ceil(definition.hardness || 0)) + oreBonus) * oreSenseMultiplier, `Mined ${definition.name}`);
       state.revision += 1;
     },
     placeBlock: (state, action) => {
-      const { position, type } = action.payload || {};
+      const { position, type, itemType = type } = action.payload || {};
       const definition = BLOCK_TYPES[type];
-      if (!Array.isArray(position) || !definition?.placeable || (state.inventory[type] || 0) <= 0) return;
+      const sourceDefinition = BLOCK_TYPES[itemType];
+      // Hidden block-state variants (door facing/open state) are placed using
+      // their craftable source item while persisting the actual rendered type.
+      if (!Array.isArray(position) || !definition || !sourceDefinition?.placeable || (state.inventory[itemType] || 0) <= 0) return;
       const key = blockKey(position[0], position[1], position[2]);
       state.blockEdits[key] = { type };
-      state.inventory[type] -= 1;
+      state.inventory[itemType] -= 1;
+      if (type === "storage_chest" && !state.storageChests[key]) {
+        state.storageChests[key] = { key, items: {}, slots: 27, createdAt: Date.now() };
+      }
       const colonyJob = COLONY_BOX_TO_JOB[type];
       if (colonyJob) {
         const stationId = `colony-station-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
@@ -377,15 +628,191 @@ const worldSlice = createSlice({
           level: 1,
           nextActionAt: 0,
           managedAnimalIds: [],
+          orderMode: colonyJob === "guard" ? "patrol" : "work",
+          threatMode: colonyJob === "guard" ? "defend" : "balanced",
+          maintenancePolicy: "auto",
+          workPriority: 1,
           health: COLONY_STATION_MAX_HEALTH,
           maxHealth: COLONY_STATION_MAX_HEALTH,
           workerState: "working",
           respawnAt: 0,
           deathCount: 0,
+          buildPlan: colonyJob === "builder" ? createBuilderHousePlan(position) : [],
+          buildIndex: 0,
+          buildStartedAt: colonyJob === "builder" ? Date.now() : 0,
+          houseCompleted: false,
         });
         if (colonyJob === "farmer") state.colony.storage.wheat_seeds = (state.colony.storage.wheat_seeds || 0) + 4;
         state.message = `${workerName} joined as the colony ${colonyJob}`;
       }
+      state.revision += 1;
+    },
+    lootTreasureChest: (state, action) => {
+      const chestKey = String(action.payload?.key || action.payload || "");
+      if (!chestKey || state.openedTreasureChests.includes(chestKey)) {
+        state.message = "This treasure chest has already been opened";
+        return;
+      }
+      const loot = getTreasureLoot(state.seed, chestKey);
+      Object.entries(loot).forEach(([item, amount]) => {
+        addInventoryItem(state, item, amount);
+        if (ITEM_TYPES[item]?.category === "tool") state.toolDurability[item] = ITEM_TYPES[item].durability;
+      });
+      state.openedTreasureChests.push(chestKey);
+      state.metrics.treasureChestsOpened = (state.metrics.treasureChestsOpened || 0) + 1;
+      addExperienceToState(state, 35, "Fortress treasure recovered");
+      state.message = `Treasure recovered · ${Object.keys(loot).length} item types`;
+      state.revision += 1;
+    },
+    enchantItem: (state, action) => {
+      const { itemId, enchantmentId } = action.payload || {};
+      const definition = ITEM_TYPES[itemId];
+      const enchantment = ENCHANTMENTS[enchantmentId];
+      if (!definition || !enchantment || (state.inventory[itemId] || 0) <= 0 || !enchantmentApplies(definition, enchantment)) return;
+      const current = getEnchantmentLevel(state, itemId, enchantmentId);
+      if (current >= enchantment.maxLevel) {
+        state.message = `${enchantment.name} is already at maximum level`;
+        return;
+      }
+      const shardCost = Math.max(1, Math.ceil(enchantment.cost / 3) + current);
+      const dustCost = enchantment.cost + current * 2;
+      if ((state.inventory.enchantment_shard || 0) < shardCost || (state.inventory.arcane_dust || 0) < dustCost) {
+        state.message = `Requires ${shardCost} enchantment shard and ${dustCost} arcane dust`;
+        return;
+      }
+      state.inventory.enchantment_shard -= shardCost;
+      state.inventory.arcane_dust -= dustCost;
+      state.enchantments[itemId] = { ...(state.enchantments[itemId] || {}), [enchantmentId]: current + 1 };
+      state.message = `${definition.name} gained ${enchantment.name} ${current + 1}`;
+      addExperienceToState(state, 18 + (current + 1) * 8, "Enchantment completed");
+      state.revision += 1;
+    },
+    analyzeFossils: (state) => {
+      if ((state.inventory.fossil_fragment || 0) < 3 || (state.inventory.ancient_bone || 0) < 1) {
+        state.message = "Analysis requires 3 fossil fragments and 1 ancient bone";
+        return;
+      }
+      state.inventory.fossil_fragment -= 3;
+      state.inventory.ancient_bone -= 1;
+      addInventoryItem(state, "dinosaur_dna", 1);
+      state.archaeology.analyzed += 1;
+      state.archaeology.dnaCreated += 1;
+      addExperienceToState(state, 28, "Fossil genome analyzed");
+      state.message = "Viable dinosaur DNA extracted";
+      state.revision += 1;
+    },
+    spliceDinosaurEgg: (state) => {
+      if ((state.inventory.dinosaur_dna || 0) < 1 || (state.inventory.egg || 0) < 1 || (state.inventory.slime_ball || 0) < 1) {
+        state.message = "Gene splicing requires dinosaur DNA, an egg, and a slime stabilizer";
+        return;
+      }
+      state.inventory.dinosaur_dna -= 1;
+      state.inventory.egg -= 1;
+      state.inventory.slime_ball -= 1;
+      addInventoryItem(state, "dinosaur_egg", 1);
+      state.archaeology.eggsSpliced += 1;
+      addExperienceToState(state, 42, "Dinosaur egg gene-spliced");
+      state.message = "A gene-spliced dinosaur egg is ready";
+      state.revision += 1;
+    },
+    reviveDinosaur: (state, action) => {
+      if ((state.inventory.dinosaur_egg || 0) < 1) {
+        state.message = "A gene-spliced dinosaur egg is required";
+        return;
+      }
+      const now = Date.now();
+      const roll = seededUnit(state.seed, now, state.archaeology.dinosaursRevived);
+      const requested = action.payload?.species;
+      const species = DINOSAUR_TYPES.includes(requested) ? requested : DINOSAUR_TYPES[Math.min(DINOSAUR_TYPES.length - 1, Math.floor(roll * DINOSAUR_TYPES.length))];
+      const position = action.payload?.position || [state.player.x + 2.5, state.player.y, state.player.z + 2.5];
+      state.inventory.dinosaur_egg -= 1;
+      const dinosaur = createMob(`revived-${species}-${now}-${Math.floor(roll * 1e6)}`, species, Number(position[0]) || 0, Number(position[1]) || 0, Number(position[2]) || 0);
+      dinosaur.revived = true;
+      dinosaur.tamed = species !== "tyrannosaur";
+      dinosaur.customName = species === "raptor" ? "Echo" : species === "triceratops" ? "Cera" : "Rex-Prime";
+      dinosaur.babyUntil = now + 180000;
+      state.mobs.push(dinosaur);
+      state.archaeology.dinosaursRevived += 1;
+      state.metrics.dinosaursRevived = (state.metrics.dinosaursRevived || 0) + 1;
+      addExperienceToState(state, 110, `Revived ${MOB_TYPES[species]?.name || species}`);
+      state.message = `${dinosaur.customName} emerged from the incubation field`;
+      state.revision += 1;
+    },
+    acceptVillageQuest: (state, action) => {
+      const questId = action.payload?.questId || action.payload;
+      const quest = VILLAGE_QUESTS.find((entry) => entry.id === questId);
+      if (!quest || state.villageQuests.claimed.includes(questId) || state.villageQuests.accepted.includes(questId)) return;
+      state.villageQuests.accepted.push(questId);
+      state.message = `Quest accepted · ${quest.name}`;
+      state.revision += 1;
+    },
+    claimVillageQuest: (state, action) => {
+      const questId = action.payload?.questId || action.payload;
+      const quest = VILLAGE_QUESTS.find((entry) => entry.id === questId);
+      if (!quest || !state.villageQuests.accepted.includes(questId) || state.villageQuests.claimed.includes(questId)) return;
+      if (villageQuestProgress(state, quest) < quest.target) {
+        state.message = `${quest.name} is not complete yet`;
+        return;
+      }
+      Object.entries(quest.rewards || {}).forEach(([item, amount]) => addInventoryItem(state, item, amount));
+      state.villageQuests.claimed.push(questId);
+      state.villageQuests.accepted = state.villageQuests.accepted.filter((id) => id !== questId);
+      state.metrics.villageQuestsCompleted = (state.metrics.villageQuestsCompleted || 0) + 1;
+      addExperienceToState(state, quest.rewardXp, `Village quest complete: ${quest.name}`);
+      state.revision += 1;
+    },
+    discoverFaction: (state, action) => {
+      const factionId = action.payload?.factionId || action.payload;
+      if (!factionId || state.factions.discovered.includes(factionId)) return;
+      state.factions.discovered.push(factionId);
+      state.message = `Discovered a new faction settlement · ${factionId}`;
+      state.revision += 1;
+    },
+    adjustFactionReputation: (state, action) => {
+      const { factionId, amount = 0, reason = "" } = action.payload || {};
+      if (!factionId || !Object.prototype.hasOwnProperty.call(state.factions.reputation, factionId)) return;
+      state.factions.reputation[factionId] = Math.max(-100, Math.min(150, (state.factions.reputation[factionId] || 0) + Number(amount || 0)));
+      state.message = `${amount >= 0 ? "+" : ""}${amount} ${factionId} reputation${reason ? ` · ${reason}` : ""}`;
+      state.revision += 1;
+    },
+    acceptFactionQuest: (state, action) => {
+      const questId = action.payload?.questId || action.payload;
+      const quest = FACTION_QUESTS.find((entry) => entry.id === questId);
+      if (!quest || state.factions.accepted.includes(questId) || state.factions.claimed.includes(questId)) return;
+      state.factions.accepted.push(questId);
+      if (!state.factions.discovered.includes(quest.factionId)) state.factions.discovered.push(quest.factionId);
+      state.message = `Faction quest accepted · ${quest.name}`;
+      state.revision += 1;
+    },
+    claimFactionQuest: (state, action) => {
+      const questId = action.payload?.questId || action.payload;
+      const quest = FACTION_QUESTS.find((entry) => entry.id === questId);
+      if (!quest || !state.factions.accepted.includes(questId) || state.factions.claimed.includes(questId)) return;
+      const progress = Number(state.metrics?.[quest.metric]) || 0;
+      if (progress < quest.target) { state.message = `${quest.name} is not complete yet`; return; }
+      Object.entries(quest.rewards || {}).forEach(([item, amount]) => addInventoryItem(state, item, amount));
+      state.factions.accepted = state.factions.accepted.filter((id) => id !== questId);
+      state.factions.claimed.push(questId);
+      state.factions.reputation[quest.factionId] = Math.min(150, (state.factions.reputation[quest.factionId] || 0) + (quest.reputation || 0));
+      addExperienceToState(state, quest.rewardXp || 0, `Faction contract complete: ${quest.name}`);
+      state.message = `${quest.name} complete · +${quest.reputation || 0} reputation`;
+      state.revision += 1;
+    },
+    toggleFenceGate: (state, action) => {
+      const { key, position, type } = action.payload || {};
+      const blockPosition = Array.isArray(position) ? position : key ? parseBlockKey(key) : null;
+      if (!blockPosition || !["oak_fence_gate", "oak_fence_gate_open"].includes(type)) return;
+      state.blockEdits[blockKey(...blockPosition)] = { type };
+      state.message = type === "oak_fence_gate_open" ? "Fence gate opened" : "Fence gate closed";
+      state.revision += 1;
+    },
+    toggleDoor: (state, action) => {
+      const { key, position, type } = action.payload || {};
+      const blockPosition = Array.isArray(position) ? position : key ? parseBlockKey(key) : null;
+      const doorTypes = ["oak_door", "oak_door_ew", "oak_door_open", "oak_door_ew_open"];
+      if (!blockPosition || !doorTypes.includes(type)) return;
+      state.blockEdits[blockKey(...blockPosition)] = { type };
+      state.message = type.endsWith("_open") ? "Oak door opened" : "Oak door closed";
       state.revision += 1;
     },
     placeBoat: (state, action) => {
@@ -449,6 +876,21 @@ const worldSlice = createSlice({
         return;
       }
 
+      const hayFeed = Boolean(
+        mobDefinition.passive && itemId === "hay_bale" && (state.inventory.hay_bale || 0) > 0
+      );
+      if (hayFeed) {
+        state.inventory.hay_bale -= 1;
+        mob.health = Math.min(mob.maxHealth || mobDefinition.maxHealth || 10, (mob.health || 0) + 8);
+        mob.fedUntil = Date.now() + 120000;
+        mob.heartUntil = Date.now() + 1800;
+        mob.tameProgress = Math.min(3, (mob.tameProgress || 0) + (mobDefinition.tameable ? 1 : 0));
+        state.metrics.animalsFed = (state.metrics.animalsFed || 0) + 1;
+        state.message = `${mob.customName || mobDefinition.name} ate the hay and recovered health`;
+        state.revision += 1;
+        return;
+      }
+
       if (mobDefinition.rideable) {
         if (!mob.tamed) {
           state.message = `Feed the ${mobDefinition.name.toLowerCase()} before riding`;
@@ -498,60 +940,244 @@ const worldSlice = createSlice({
         if (definition?.category === "armor") state.armorDurability[item] = definition.durability;
       });
       state.metrics.itemsCrafted += Math.max(1, craftedCount);
-      addExperienceToState(state, recipe.station === "crafting_table" ? 6 : 2, `Crafted ${recipe.name}`);
+      if (recipe.station === "arcane_table" || Object.keys(recipe.outputs).some((item) => ITEM_TYPES[item]?.category === "arcane" || ITEM_TYPES[item]?.arcaneFocus)) {
+        state.arcana.knowledge += 3;
+        if (state.arcana.knowledge % 15 < 3) state.arcana.researchPoints += 1;
+      }
+      addExperienceToState(state, recipe.station === "arcane_table" ? 9 : recipe.station === "crafting_table" ? 6 : 2, `Crafted ${recipe.name}`);
+      state.revision += 1;
+    },
+    assignHousingBed: (state, action) => {
+      const { key, role, room } = action.payload || {};
+      const roleDefinition = HOUSING_ROLES[role];
+      if (!key || !roleDefinition || !room?.valid || !Array.isArray(room.position)) {
+        state.message = room?.reason || "Finish the room before assigning this bed";
+        return;
+      }
+      const existing = state.housing.beds[key];
+      let resident = existing?.residentId ? state.mobs.find((mob) => mob.id === existing.residentId) : null;
+      if (!resident) {
+        const index = state.housing.residentsRecruited % HOUSING_RESIDENT_NAMES.length;
+        const residentName = HOUSING_RESIDENT_NAMES[index];
+        const [x, y, z] = room.position;
+        resident = createMob(`resident-${Date.now()}-${Math.floor(Math.random() * 1e7)}`, "colonist", x + 1.1, y + 0.2, z + 0.5);
+        resident.customName = residentName;
+        resident.tamed = true;
+        resident.housingBedKey = key;
+        resident.homePosition = [x + 0.5, y + 0.2, z + 0.5];
+        resident.homeX = x + 0.5;
+        resident.homeY = y + 0.2;
+        resident.homeZ = z + 0.5;
+        resident.homeRadius = 10;
+        state.mobs.push(resident);
+        state.housing.residentsRecruited += 1;
+      }
+      resident.job = role;
+      resident.housingBedKey = key;
+      resident.homePosition = [room.position[0] + 0.5, room.position[1] + 0.2, room.position[2] + 0.5];
+      resident.homeX = resident.homePosition[0];
+      resident.homeY = resident.homePosition[1];
+      resident.homeZ = resident.homePosition[2];
+      resident.homeRadius = role === "guard" ? 16 : 10;
+      state.housing.beds[key] = {
+        key,
+        position: [...room.position],
+        room: { ...room, bounds: room.bounds ? { ...room.bounds } : null },
+        role,
+        residentId: resident.id,
+        residentName: resident.customName,
+        active: true,
+        lastWorkedAt: Number(existing?.lastWorkedAt) || Date.now(),
+      };
+      state.message = `${resident.customName} moved in as the ${roleDefinition.name}`;
+      state.revision += 1;
+    },
+    releaseHousingBed: (state, action) => {
+      const key = action.payload?.key || action.payload;
+      const bed = state.housing.beds[key];
+      if (!bed) return;
+      if (bed.residentId) state.mobs = state.mobs.filter((mob) => mob.id !== bed.residentId);
+      delete state.housing.beds[key];
+      state.message = `${bed.residentName || "Resident"} left the settlement`;
+      state.revision += 1;
+    },
+    runHousingWorkCycle: (state, action) => {
+      const now = Number(action.payload?.now ?? action.payload ?? Date.now());
+      let completed = 0;
+      Object.values(state.housing.beds || {}).forEach((bed) => {
+        if (!bed?.active) return;
+        const role = HOUSING_ROLES[bed.role];
+        let resident = bed.residentId ? state.mobs.find((mob) => mob.id === bed.residentId && !mob.dyingUntil) : null;
+        if (!resident && bed.respawnAt && now >= bed.respawnAt && role) {
+          const [x, y, z] = bed.position || [0, 0, 0];
+          resident = createMob(`resident-${Date.now()}-${Math.floor(Math.random() * 1e7)}`, "colonist", x + 1.1, y + 0.2, z + 0.5);
+          resident.customName = bed.residentName || HOUSING_RESIDENT_NAMES[state.housing.residentsRecruited % HOUSING_RESIDENT_NAMES.length];
+          resident.tamed = true;
+          resident.job = bed.role;
+          resident.housingBedKey = bed.key;
+          resident.homeX = x + 0.5; resident.homeY = y + 0.2; resident.homeZ = z + 0.5;
+          resident.homeRadius = bed.role === "guard" ? 16 : 10;
+          state.mobs.push(resident);
+          bed.residentId = resident.id;
+          bed.respawnAt = 0;
+          bed.status = "working";
+        }
+        if (!resident || !role || now - Number(bed.lastWorkedAt || 0) < role.cycleMs) return;
+        bed.lastWorkedAt = now;
+        role.outputs.forEach((drop) => {
+          if (Math.random() > drop.chance) return;
+          const amount = drop.min + Math.floor(Math.random() * (Math.max(0, drop.max - drop.min) + 1));
+          state.housing.storage[drop.item] = Math.min(999, Number(state.housing.storage[drop.item] || 0) + amount);
+        });
+        resident.actionState = bed.role === "guard" ? "guard" : bed.role === "farmer" ? "farm" : bed.role === "miner" ? "mine" : "work";
+        resident.actionUntil = now + 1250;
+        completed += 1;
+      });
+      if (completed > 0) {
+        state.housing.workCycles += completed;
+        state.message = `${completed} household work ${completed === 1 ? "cycle" : "cycles"} completed`;
+        state.revision += 1;
+      }
+    },
+    collectHousingStorage: (state) => {
+      let collected = 0;
+      Object.entries(state.housing.storage || {}).forEach(([item, amount]) => {
+        const result = addInventoryItem(state, item, Number(amount) || 0);
+        state.housing.storage[item] = Math.max(0, Number(amount) - result.added);
+        collected += result.added;
+      });
+      if (collected > 0) {
+        state.message = `Collected ${collected} items from household storage`;
+        state.revision += 1;
+      }
+    },
+    summonBoss: (state, action) => {
+      const { bossType, altarKey, position } = action.payload || {};
+      const summon = BOSS_SUMMONS[bossType];
+      if (!summon || !altarKey || !Array.isArray(position)) return;
+      const active = state.bosses.activeBossId && state.mobs.find((mob) => mob.id === state.bosses.activeBossId && !mob.dyingUntil);
+      if (active) {
+        state.message = `${MOB_TYPES[active.type]?.name || "A boss"} is already active`;
+        return;
+      }
+      if ((state.inventory[summon.itemId] || 0) <= 0) {
+        state.message = `${ITEM_TYPES[summon.itemId]?.name || summon.itemId} is required`;
+        return;
+      }
+      state.inventory[summon.itemId] -= 1;
+      const [ox, oy, oz] = summon.spawnOffset;
+      const id = `boss-${bossType}-${Date.now()}-${Math.floor(Math.random() * 1e7)}`;
+      const boss = createMob(id, bossType, Number(position[0]) + ox, Number(position[1]) + oy, Number(position[2]) + oz);
+      boss.summonedAt = Date.now();
+      boss.altarKey = altarKey;
+      boss.homeX = boss.x;
+      boss.homeY = boss.y;
+      boss.homeZ = boss.z;
+      boss.homeRadius = 34;
+      state.mobs.push(boss);
+      state.bosses.activeBossId = id;
+      state.bosses.activeBossType = bossType;
+      state.bosses.summoned += 1;
+      state.message = `${summon.name} has awakened`;
+      state.revision += 1;
+    },
+    recordBossAbility: (state, action) => {
+      const { bossId, ability, now = Date.now() } = action.payload || {};
+      if (!bossId || bossId !== state.bosses.activeBossId) return;
+      state.bosses.lastAbility = { bossId, ability: String(ability || "Boss ability"), at: Number(now) || Date.now() };
+      state.message = `${MOB_TYPES[state.bosses.activeBossType]?.name || "Boss"} used ${ability}`;
+    },
+    spawnBossMinions: (state, action) => {
+      const { bossId, types = [] } = action.payload || {};
+      const boss = state.mobs.find((mob) => mob.id === bossId && !mob.dyingUntil);
+      if (!boss || !MOB_TYPES[boss.type]?.boss) return;
+      const existing = state.mobs.filter((mob) => mob.bossOwnerId === bossId && !mob.dyingUntil).length;
+      types.slice(0, Math.max(0, 5 - existing)).forEach((type, index) => {
+        if (!MOB_TYPES[type]) return;
+        const angle = (index / Math.max(1, types.length)) * Math.PI * 2 + Math.random();
+        const minion = createMob(`boss-minion-${bossId}-${Date.now()}-${index}`, type, boss.x + Math.cos(angle) * 3.2, boss.y, boss.z + Math.sin(angle) * 3.2);
+        minion.bossOwnerId = bossId;
+        minion.homeX = boss.x;
+        minion.homeY = boss.y;
+        minion.homeZ = boss.z;
+        minion.homeRadius = 22;
+        state.mobs.push(minion);
+      });
       state.revision += 1;
     },
     startFurnaceJob: (state, action) => {
       const { furnaceKey, recipeId, fuelId, now = Date.now() } = action.payload || {};
       const recipe = SMELTING_RECIPES.find((item) => item.id === recipeId);
       if (!recipe || !furnaceKey) return;
-      if (state.furnaces[furnaceKey]) {
-        state.message = "This furnace is already smelting";
-        return;
-      }
+      const station = state.furnaces[furnaceKey] || { outputInventory: {} };
+      if (station.recipeId) { state.message = "This furnace is already smelting"; return; }
       if ((state.inventory[recipe.input] || 0) < 1) return;
       if ((state.inventory[fuelId] || 0) < 1 || getFuelPower(fuelId) <= 0) return;
-      const outputDefinition = getItemDefinition(recipe.output);
-      if ((state.inventory[recipe.output] || 0) >= (outputDefinition.maxStack || 64)) return;
-
+      const stored = Number(station.outputInventory?.[recipe.output] || 0);
+      if (stored >= 64) { state.message = "Take the furnace output before smelting more"; return; }
       state.inventory[recipe.input] -= 1;
       state.inventory[fuelId] -= 1;
       state.furnaces[furnaceKey] = {
-        recipeId,
-        input: recipe.input,
-        output: recipe.output,
-        fuelId,
-        startedAt: Number(now),
+        ...station, recipeId, input: recipe.input, output: recipe.output, fuelId, startedAt: Number(now),
         durationMs: (recipe.seconds * 1000) / getCraftingSpeedMultiplier(state.progression) / (hasPerk(state.progression, "efficient_smelting") ? 1.12 : 1),
+        outputInventory: { ...(station.outputInventory || {}) },
       };
-      state.message = `Started ${recipe.name}`;
-      state.revision += 1;
+      state.message = `Started ${recipe.name}`; state.revision += 1;
     },
     completeFurnaceJobs: (state, action) => {
       const now = Number(action.payload?.now ?? action.payload ?? Date.now());
       let completed = 0;
-      Object.entries(state.furnaces).forEach(([key, job]) => {
-        if (now - job.startedAt < job.durationMs) return;
-        const definition = getItemDefinition(job.output);
-        if ((state.inventory[job.output] || 0) >= (definition.maxStack || 64)) return;
-        addInventoryItem(state, job.output, 1);
-        if (hasPerk(state.progression, "master_smelter") && Math.random() < 0.12) addInventoryItem(state, job.output, 1);
-        delete state.furnaces[key];
+      Object.entries(state.furnaces).forEach(([key, station]) => {
+        if (!station.recipeId || now - station.startedAt < station.durationMs) return;
+        const amount = 1 + (hasPerk(state.progression, "master_smelter") && Math.random() < 0.12 ? 1 : 0);
+        const outputInventory = { ...(station.outputInventory || {}) };
+        outputInventory[station.output] = Math.min(64, Number(outputInventory[station.output] || 0) + amount);
+        state.furnaces[key] = { outputInventory, lastCompletedAt: now };
         completed += 1;
       });
-      if (completed > 0) {
-        state.metrics.smeltsCompleted += completed;
-        addExperienceToState(state, completed * 3, completed === 1 ? "Smelting complete" : `${completed} smelts complete`);
-        state.revision += 1;
-      }
+      if (completed > 0) { state.metrics.smeltsCompleted += completed; addExperienceToState(state, completed * 3, completed === 1 ? "Smelting ready to collect" : `${completed} furnace outputs ready`); state.revision += 1; }
+    },
+    collectFurnaceOutput: (state, action) => {
+      const { furnaceKey, itemId, amount = Infinity } = action.payload || {};
+      const station = state.furnaces[furnaceKey];
+      const stored = Number(station?.outputInventory?.[itemId] || 0);
+      if (!station || !stored) return;
+      const result = addInventoryItem(state, itemId, Math.min(stored, Number(amount) || stored));
+      if (result.added <= 0) return;
+      station.outputInventory[itemId] -= result.added;
+      if (station.outputInventory[itemId] <= 0) delete station.outputInventory[itemId];
+      state.message = `Collected ${result.added} ${getItemDefinition(itemId).name}`; state.revision += 1;
+    },
+    sitOnChair: (state, action) => {
+      const { key, position, yaw = 0 } = action.payload || {};
+      if (!key || !Array.isArray(position)) return;
+      state.seated = { key, position: [...position], yaw: Number(yaw) || 0 };
+      state.message = "Seated · move, jump, crouch, or sprint to stand"; state.revision += 1;
+    },
+    standUp: (state) => { if (state.seated) { state.seated = null; state.message = "Stood up"; state.revision += 1; } },
+    dropInventoryItem: (state, action) => {
+      const { itemId, amount = 1, position, velocity = {} } = action.payload || {};
+      const available = Number(state.inventory[itemId] || 0);
+      const count = Math.min(available, Math.max(1, Math.floor(amount)));
+      if (!ITEM_TYPES[itemId] || count <= 0) return;
+      state.inventory[itemId] -= count;
+      pushWorldDrop(state, itemId, count, position || [state.player.x, state.player.y, state.player.z], { vx: velocity.x, vy: velocity.y, vz: velocity.z, pickupDelay: 850 });
+      state.message = `Dropped ${count} ${getItemDefinition(itemId).name}`; state.revision += 1;
     },
     consumeItem: (state, action) => {
       const itemId = action.payload;
       const item = ITEM_TYPES[itemId];
-      if (!item?.food || (state.inventory[itemId] || 0) <= 0 || state.hunger >= 20) return;
+      const maxHealth = getMaxHealth(state.progression);
+      const canRestoreHunger = state.hunger < 20;
+      const canRestoreHealth = Number(item?.heal || 0) > 0 && state.health < maxHealth;
+      const canRestoreMana = Number(item?.mana || 0) > 0 && state.arcana?.mana < state.arcana?.maxMana;
+      if (!item?.food || (state.inventory[itemId] || 0) <= 0 || (!canRestoreHunger && !canRestoreHealth && !canRestoreMana)) return;
       state.inventory[itemId] -= 1;
       state.hunger = Math.min(20, state.hunger + item.food);
-      state.message = `Ate ${item.name}`;
+      if (item.heal) state.health = Math.min(maxHealth, state.health + Number(item.heal || 0));
+      if (item.mana && state.arcana) state.arcana.mana = Math.min(state.arcana.maxMana, state.arcana.mana + Number(item.mana || 0));
+      if (item.returnsItem) addInventoryItem(state, item.returnsItem, 1, { autoHotbar: false });
+      state.message = item.returnsItem ? `Ate ${item.name} · ${getItemDefinition(item.returnsItem).name} returned` : `Ate ${item.name}`;
       state.revision += 1;
     },
     damageMob: (state, action) => {
@@ -561,16 +1187,29 @@ const worldSlice = createSlice({
       const usableItem = (state.inventory[itemId] || 0) > 0 ? itemId : null;
       const powerBonus = hasPerk(state.progression, "power_strike") ? 1.1 : 1;
       const critical = hasPerk(state.progression, "critical_training") && Math.random() < 0.12;
-      const damage = getAttackDamage(usableItem) * getStrengthDamageMultiplier(state.progression) * powerBonus * (critical ? 1.75 : 1);
+      const sharpness = getEnchantmentLevel(state, usableItem, "sharpness");
+      const vampiric = getEnchantmentLevel(state, usableItem, "vampiric");
+      const damage = (getAttackDamage(usableItem) + sharpness * 1.45) * getStrengthDamageMultiplier(state.progression) * powerBonus * (critical ? 1.75 : 1);
       const defeatedType = state.mobs[index].type;
       state.mobs[index].health -= damage;
       state.mobs[index].hurtUntil = Date.now() + 320;
-      if (usableItem && ITEM_TYPES[usableItem]?.category === "tool") damageTool(state, usableItem, 1);
+      if (vampiric > 0) state.health = Math.min(getMaxHealth(state.progression), state.health + Math.max(0.25, damage * vampiric * 0.035));
+      if (usableItem && ITEM_TYPES[usableItem]?.category === "tool") damageEquipmentWithEnchant(state, usableItem, 1);
       if (state.mobs[index]?.health <= 0) {
         const definition = MOB_TYPES[defeatedType];
         if (beginMobDeath(state, index, "player")) {
+          if (definition?.factionId && state.factions?.reputation) {
+            const penalty = definition.guardian ? 12 : 6;
+            state.factions.reputation[definition.factionId] = Math.max(-100, (state.factions.reputation[definition.factionId] || 0) - penalty);
+            state.message = `Attacking ${definition.name} damaged your ${definition.factionId} reputation`;
+          }
           state.metrics.mobsDefeated += 1;
-          if (definition?.hostile) state.metrics.hostilesDefeated += 1;
+          if (definition?.hostile) {
+            state.metrics.hostilesDefeated += 1;
+            if (definition.elite) state.metrics.eliteEnemiesDefeated = (state.metrics.eliteEnemiesDefeated || 0) + 1;
+            state.arcana.knowledge += 2;
+            if (Math.random() < 0.12) state.arcana.researchPoints += 1;
+          }
           addExperienceToState(state, definition?.hostile ? 12 : definition?.friendly ? 8 : 5, `Defeated ${definition?.name || defeatedType}`);
         }
       }
@@ -627,6 +1266,8 @@ const worldSlice = createSlice({
       let damage = reduceDamageWithArmor(rawDamage, defense);
       if (hasPerk(state.progression, "thick_skin")) damage *= 0.95;
       damage *= setBonus?.damageMultiplier || 1;
+      const protectionLevel = ARMOR_SLOTS.reduce((sum, slot) => sum + getEnchantmentLevel(state, state.armor[slot], "protection"), 0);
+      damage *= Math.max(0.55, 1 - protectionLevel * 0.035);
       const now = Date.now();
       state.health = Math.max(0, state.health - damage);
       state.playerDamageAt = now;
@@ -637,7 +1278,9 @@ const worldSlice = createSlice({
         if (!itemId) return;
         const definition = ITEM_TYPES[itemId];
         const current = state.armorDurability[itemId] ?? definition?.durability ?? 1;
-        const next = current - Math.max(1, Math.ceil(rawDamage * 0.35 * (setBonus?.durabilityMultiplier || 1)));
+        const tempered = getEnchantmentLevel(state, itemId, "durability");
+        const enchantDurabilityMultiplier = Math.max(0.35, 1 - tempered * 0.18);
+        const next = current - Math.max(1, Math.ceil(rawDamage * 0.35 * (setBonus?.durabilityMultiplier || 1) * enchantDurabilityMultiplier));
         if (next <= 0) {
           state.armor[slot] = null;
           state.inventory[itemId] = 0;
@@ -714,6 +1357,68 @@ const worldSlice = createSlice({
       const payload = typeof action.payload === "number" ? { amount: action.payload } : action.payload || {};
       addExperienceToState(state, payload.amount, payload.reason || "Experience gained");
       state.revision += 1;
+    },
+    transferToStorageChest: (state, action) => {
+      const { key, itemId, amount = 1 } = action.payload || {};
+      const chest = state.storageChests[key];
+      const definition = ITEM_TYPES[itemId];
+      if (!chest || !definition || (state.inventory[itemId] || 0) <= 0) return;
+      const items = chest.items || (chest.items = {});
+      const uniqueSlots = Object.keys(items).filter((id) => Number(items[id]) > 0).length;
+      if (!items[itemId] && uniqueSlots >= (chest.slots || 27)) { state.message = "Storage chest is full"; return; }
+      const maxStack = definition.maxStack || 64;
+      const moved = Math.min(Math.max(1, Math.floor(amount)), state.inventory[itemId] || 0, maxStack - (items[itemId] || 0));
+      if (moved <= 0) return;
+      state.inventory[itemId] -= moved;
+      items[itemId] = (items[itemId] || 0) + moved;
+      if (state.inventory[itemId] <= 0) state.hotbar = state.hotbar.map((entry) => entry === itemId ? null : entry);
+      state.message = `Stored ${moved} ${definition.name}`;
+      state.revision += 1;
+    },
+    transferFromStorageChest: (state, action) => {
+      const { key, itemId, amount = 1 } = action.payload || {};
+      const chest = state.storageChests[key];
+      const definition = ITEM_TYPES[itemId];
+      const stored = Number(chest?.items?.[itemId] || 0);
+      if (!chest || !definition || stored <= 0) return;
+      const capacity = (definition.maxStack || 64) - (state.inventory[itemId] || 0);
+      const moved = Math.min(Math.max(1, Math.floor(amount)), stored, capacity);
+      if (moved <= 0) { state.message = "Inventory stack is full"; return; }
+      addInventoryItem(state, itemId, moved);
+      chest.items[itemId] = stored - moved;
+      if (chest.items[itemId] <= 0) delete chest.items[itemId];
+      state.message = `Took ${moved} ${definition.name}`;
+      state.revision += 1;
+    },
+    emptyLavaBucket: (state, action) => {
+      const { position, solidified = false } = action.payload || {};
+      if ((state.inventory.lava_bucket || 0) <= 0 || !Array.isArray(position)) return;
+      state.inventory.lava_bucket -= 1;
+      addInventoryItem(state, "bucket", 1, { autoHotbar: false });
+      state.hotbar = state.hotbar.map((item) => item === "lava_bucket" ? "bucket" : item);
+      state.blockEdits[blockKey(...position)] = { type: solidified ? "obsidian" : "lava" };
+      state.message = solidified ? "Lava cooled into obsidian" : "Lava source placed";
+      state.revision += 1;
+    },
+    fillLavaBucket: (state, action) => {
+      const { key } = action.payload || {};
+      if ((state.inventory.bucket || 0) <= 0 || (state.inventory.lava_bucket || 0) >= 1) return;
+      state.inventory.bucket -= 1;
+      addInventoryItem(state, "lava_bucket", 1, { autoHotbar: false });
+      state.hotbar = state.hotbar.map((item) => item === "bucket" ? "lava_bucket" : item);
+      if (key) state.blockEdits[key] = null;
+      state.message = "Filled lava bucket";
+      state.revision += 1;
+    },
+    solidifyLava: (state, action) => {
+      const positions = Array.isArray(action.payload?.positions) ? action.payload.positions : [];
+      positions.forEach((position) => {
+        if (Array.isArray(position)) state.blockEdits[blockKey(...position)] = { type: "obsidian" };
+      });
+      if (positions.length) {
+        state.message = positions.length === 1 ? "Lava cooled into obsidian" : `${positions.length} lava blocks cooled into obsidian`;
+        state.revision += 1;
+      }
     },
     emptyWaterBucket: (state) => {
       if ((state.inventory.water_bucket || 0) <= 0) return;
@@ -824,10 +1529,31 @@ const worldSlice = createSlice({
         if (station) Object.assign(station, patch);
       });
     },
+    advanceColonyConstruction: (state, action) => {
+      const { stationId, position, type, planIndex = 0, completed = false } = action.payload || {};
+      const station = state.colony.stations.find((candidate) => candidate.id === stationId && candidate.job === "builder");
+      if (!station || station.destroyed || !Array.isArray(position) || !BLOCK_TYPES[type]) return;
+      const key = blockKey(...position);
+      state.blockEdits[key] = { type };
+      station.buildIndex = Math.max(Number(station.buildIndex || 0), Number(planIndex || 0) + 1);
+      station.progress = station.buildPlan?.length ? Math.min(1, station.buildIndex / station.buildPlan.length) : 1;
+      station.status = completed ? "House complete" : `Building ${String(action.payload?.phase || "house").replaceAll("_", " ")}`;
+      state.colony.totals.constructionBlocksPlaced = Number(state.colony.totals.constructionBlocksPlaced || 0) + 1;
+      if (type === "storage_chest" && !state.storageChests[key]) state.storageChests[key] = { key, items: {}, slots: 27, createdAt: Date.now(), builtByColony: stationId };
+      if (completed && !station.houseCompleted) {
+        station.houseCompleted = true;
+        station.completedAt = Date.now();
+        state.colony.totals.housesBuilt = Number(state.colony.totals.housesBuilt || 0) + 1;
+        state.message = `${station.workerName} completed a furnished colony house`;
+      }
+      state.revision += 1;
+    },
     addColonyResources: (state, action) => {
       const { stationId, items = {}, totals = {}, blockEdits = {}, message = "" } = action.payload || {};
       Object.entries(blockEdits).forEach(([key, value]) => { state.blockEdits[key] = value; });
-      Object.entries(items).forEach(([item, amount]) => { state.colony.storage[item] = (state.colony.storage[item] || 0) + Math.max(0, Number(amount) || 0); });
+      Object.entries(items).forEach(([item, amount]) => {
+        state.colony.storage[item] = Math.max(0, (state.colony.storage[item] || 0) + (Number(amount) || 0));
+      });
       Object.entries(totals).forEach(([key, amount]) => { state.colony.totals[key] = (state.colony.totals[key] || 0) + Math.max(0, Number(amount) || 0); });
       const station = state.colony.stations.find((candidate) => candidate.id === stationId);
       if (station) station.production = (station.production || 0) + Object.values(items).reduce((sum, amount) => sum + (Number(amount) || 0), 0);
@@ -847,6 +1573,35 @@ const worldSlice = createSlice({
       if (!station) return;
       station.enabled = !station.enabled;
       station.status = station.enabled ? "Returning to work" : "Work paused";
+      state.revision += 1;
+    },
+    updateColonyStationOrders: (state, action) => {
+      const { stationId, orderMode, threatMode, maintenancePolicy, workPriority } = action.payload || {};
+      const station = state.colony.stations.find((candidate) => candidate.id === stationId);
+      if (!station) return;
+      if (orderMode) station.orderMode = String(orderMode);
+      if (["balanced", "defend", "flee"].includes(threatMode)) station.threatMode = threatMode;
+      if (["auto", "manual", "off"].includes(maintenancePolicy)) station.maintenancePolicy = maintenancePolicy;
+      if (Number.isFinite(workPriority)) station.workPriority = Math.max(1, Math.min(3, Number(workPriority)));
+      station.status = `Orders updated · ${station.orderMode}`;
+      state.message = `${station.workerName} received new colony orders`;
+      state.revision += 1;
+    },
+    maintainColonyStation: (state, action) => {
+      const stationId = action.payload?.stationId || action.payload;
+      const station = state.colony.stations.find((candidate) => candidate.id === stationId);
+      if (!station || station.destroyed || station.health >= station.maxHealth) return;
+      const plankCost = hasPerk(state.progression, "arcane_engineer") ? 1 : 2;
+      const stoneCost = hasPerk(state.progression, "arcane_engineer") ? 1 : 2;
+      if ((state.colony.storage.planks || 0) < plankCost || (state.colony.storage.cobblestone || 0) < stoneCost) {
+        state.message = `Maintenance needs ${plankCost} planks and ${stoneCost} cobblestone in colony storage`;
+        return;
+      }
+      state.colony.storage.planks -= plankCost;
+      state.colony.storage.cobblestone -= stoneCost;
+      station.health = Math.min(station.maxHealth, station.health + 24);
+      station.status = "Station repaired and reinforced";
+      state.message = `${station.workerName}'s station was repaired`;
       state.revision += 1;
     },
     assignColonyAnimals: (state, action) => {
@@ -939,10 +1694,18 @@ const worldSlice = createSlice({
       if (shared.blockEdits && typeof shared.blockEdits === "object") state.blockEdits = sanitizeBlockEdits(shared.blockEdits);
       if (Array.isArray(shared.mobs)) state.mobs = shared.mobs;
       if (shared.furnaces && typeof shared.furnaces === "object") state.furnaces = shared.furnaces;
+      if (shared.storageChests && typeof shared.storageChests === "object") state.storageChests = shared.storageChests;
       if (shared.colony && typeof shared.colony === "object") state.colony = cloneColonyState(shared.colony);
+      if (shared.housing && typeof shared.housing === "object") state.housing = cloneHousingState(shared.housing);
+      if (shared.bosses && typeof shared.bosses === "object") state.bosses = cloneBossState(shared.bosses);
       if (Array.isArray(shared.crops)) state.crops = sanitizeCropRecords(shared.crops);
       if (Array.isArray(shared.droppedItems)) state.droppedItems = shared.droppedItems;
       if (shared.weather && typeof shared.weather === "object") state.weather = { ...state.weather, ...shared.weather };
+      if (shared.enchantments && typeof shared.enchantments === "object") state.enchantments = shared.enchantments;
+      if (Array.isArray(shared.openedTreasureChests)) state.openedTreasureChests = shared.openedTreasureChests;
+      if (shared.villageQuests && typeof shared.villageQuests === "object") state.villageQuests = shared.villageQuests;
+      if (shared.factions && typeof shared.factions === "object") state.factions = cloneFactionState(shared.factions);
+      if (shared.archaeology && typeof shared.archaeology === "object") state.archaeology = { ...state.archaeology, ...shared.archaeology };
       if (Number.isFinite(shared.worldTime)) state.worldTime = shared.worldTime;
       if (Number.isFinite(shared.revision)) state.revision = Math.max(state.revision, shared.revision);
     },
@@ -960,8 +1723,29 @@ export const {
   setSelectedIndex,
   cycleSelected,
   assignHotbarItem,
+  swapHotbarItems,
+  clearHotbarSlot,
+  clearReplaceableBlock,
+  unlockArcaneResearch,
+  selectArcaneSpell,
+  cycleArcaneSpell,
+  regenerateArcana,
+  castArcaneSpell,
   breakBlock,
   placeBlock,
+  lootTreasureChest,
+  enchantItem,
+  analyzeFossils,
+  spliceDinosaurEgg,
+  reviveDinosaur,
+  acceptVillageQuest,
+  claimVillageQuest,
+  discoverFaction,
+  adjustFactionReputation,
+  acceptFactionQuest,
+  claimFactionQuest,
+  toggleFenceGate,
+  toggleDoor,
   placeBoat,
   interactMob,
   dismount,
@@ -970,6 +1754,19 @@ export const {
   craftRecipe,
   startFurnaceJob,
   completeFurnaceJobs,
+  collectFurnaceOutput,
+  transferToStorageChest,
+  transferFromStorageChest,
+  sitOnChair,
+  standUp,
+  assignHousingBed,
+  releaseHousingBed,
+  runHousingWorkCycle,
+  collectHousingStorage,
+  summonBoss,
+  recordBossAbility,
+  spawnBossMinions,
+  dropInventoryItem,
   consumeItem,
   damageMob,
   mobCombatHit,
@@ -985,15 +1782,21 @@ export const {
   grantExperience,
   emptyWaterBucket,
   fillWaterBucket,
+  emptyLavaBucket,
+  fillLavaBucket,
+  solidifyLava,
   tillSoil,
   plantCrop,
   applyCropGrowth,
   applyColonyFrame,
+  advanceColonyConstruction,
   damageColonyStation,
   respawnColonyWorker,
   addColonyResources,
   collectColonyStorage,
   toggleColonyStation,
+  updateColonyStationOrders,
+  maintainColonyStation,
   assignColonyAnimals,
   breedColonyAnimal,
   spawnWorldDrop,

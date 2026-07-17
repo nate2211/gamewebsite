@@ -4,6 +4,10 @@ import {
   Button,
   Chip,
   LinearProgress,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
   Paper,
   Stack,
   Typography,
@@ -20,9 +24,16 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import {
   collectColonyStorage,
+  maintainColonyStation,
   toggleColonyStation,
+  updateColonyStationOrders,
 } from "../../../features/world/worldSlice";
-import { COLONY_JOB_TYPES } from "../../../game/config/colony";
+import {
+  COLONY_JOB_TYPES,
+  COLONY_MAINTENANCE_POLICIES,
+  COLONY_ORDER_MODES,
+  COLONY_THREAT_MODES,
+} from "../../../game/config/colony";
 import { getItemDefinition } from "../../../game/config/blockTypes";
 import ItemIcon from "../../items/icons/ItemIcon";
 
@@ -138,6 +149,33 @@ export default function ColonyPanel({ stationKey = null }) {
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                   {station.status || job?.description}
                 </Typography>
+                <Stack direction={{ xs: "column", lg: "row" }} gap={1} sx={{ my: 1 }}>
+                  <FormControl size="small" sx={{ minWidth: 130 }}>
+                    <InputLabel>Work order</InputLabel>
+                    <Select label="Work order" value={station.orderMode || (station.job === "guard" ? "patrol" : "work")} onChange={(event) => dispatch(updateColonyStationOrders({ stationId: station.id, orderMode: event.target.value }))}>
+                      {(COLONY_ORDER_MODES[station.job] || ["work"]).map((mode) => <MenuItem key={mode} value={mode}>{mode.replaceAll("_", " ")}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                  <FormControl size="small" sx={{ minWidth: 130 }}>
+                    <InputLabel>Threat response</InputLabel>
+                    <Select label="Threat response" value={station.threatMode || "balanced"} onChange={(event) => dispatch(updateColonyStationOrders({ stationId: station.id, threatMode: event.target.value }))}>
+                      {COLONY_THREAT_MODES.map((mode) => <MenuItem key={mode} value={mode}>{mode}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                  <FormControl size="small" sx={{ minWidth: 130 }}>
+                    <InputLabel>Maintenance</InputLabel>
+                    <Select label="Maintenance" value={station.maintenancePolicy || "auto"} onChange={(event) => dispatch(updateColonyStationOrders({ stationId: station.id, maintenancePolicy: event.target.value }))}>
+                      {COLONY_MAINTENANCE_POLICIES.map((mode) => <MenuItem key={mode} value={mode}>{mode}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                  <FormControl size="small" sx={{ minWidth: 110 }}>
+                    <InputLabel>Priority</InputLabel>
+                    <Select label="Priority" value={station.workPriority || 1} onChange={(event) => dispatch(updateColonyStationOrders({ stationId: station.id, workPriority: Number(event.target.value) }))}>
+                      <MenuItem value={1}>Normal</MenuItem><MenuItem value={2}>High</MenuItem><MenuItem value={3}>Urgent</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <Button size="small" disabled={station.destroyed || health >= maxHealth} onClick={() => dispatch(maintainColonyStation({ stationId: station.id }))}>Repair</Button>
+                </Stack>
                 <Typography variant="caption">Station health {Math.ceil(health)} / {maxHealth}</Typography>
                 <LinearProgress
                   color={health / maxHealth < 0.3 ? "error" : "success"}

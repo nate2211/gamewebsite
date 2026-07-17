@@ -2,13 +2,14 @@ import { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useDispatch, useSelector } from "react-redux";
-import { damagePlayer, dismount, setPlayerPosition, survivalTick } from "../../features/world/worldSlice";
+import { damagePlayer, dismount, setPlayerPosition, standUp, survivalTick } from "../../features/world/worldSlice";
 import { BLOCK_TYPES } from "../config/blockTypes";
 import useKeyboard from "./useKeyboard";
-import { findSupportedWaterLedgeStep } from "./movementUtils";
+import { findSupportedOneBlockAutoStep, findSupportedWaterLedgeStep } from "./movementUtils";
 import { worldRuntime } from "../core/worldRuntime";
 import { liquidRuntime } from "../liquids/liquidRuntime";
 import { getJumpVelocity } from "../config/progression";
+import { hasPerk } from "../config/perks";
 import { readRuntimeSettings } from "../config/runtimeSettings";
 import {
   createStreamingBoundarySampler,
@@ -19,6 +20,9 @@ const PLAYER_RADIUS = 0.3;
 const PLAYER_HEIGHT = 1.8;
 const EYE_HEIGHT = 1.62;
 const WATER_LEDGE_STEP = 1.35;
+const AUTO_STEP_MAX_HEIGHT = 1.08;
+const AUTO_STEP_HOP_VELOCITY = 2.35;
+const AUTO_STEP_COOLDOWN = 0.09;
 const UP = new THREE.Vector3(0, 1, 0);
 const EPSILON = 0.0001;
 const LOOK_SENSITIVITY = 0.0022;
@@ -34,6 +38,7 @@ export default function PlayerController({ playerRef, mountRef, controlsEnabled 
   const savedPlayer = useSelector((state) => state.world.player);
   const deaths = useSelector((state) => state.world.deaths);
   const mount = useSelector((state) => state.world.mount);
+  const seated = useSelector((state) => state.world.seated);
   const mobs = useSelector((state) => state.world.mobs);
   const progression = useSelector((state) => state.world.progression);
   const seed = useSelector((state) => state.world.seed);
@@ -51,6 +56,7 @@ export default function PlayerController({ playerRef, mountRef, controlsEnabled 
   const yawRef = useRef(0);
   const pitchRef = useRef(INITIAL_CAMERA_PITCH);
   const dismountLatchRef = useRef(false);
+  const autoStepCooldownRef = useRef(0);
   const hasEnteredGameplayRef = useRef(false);
   const runtimeSettingsRef = useRef(readRuntimeSettings());
   const streamingSamplerRef = useRef(createStreamingBoundarySampler(seed));
@@ -182,6 +188,14 @@ export default function PlayerController({ playerRef, mountRef, controlsEnabled 
     []
   );
 
+  const isLadderAt = useCallback((position) => {
+    const x = Math.round(position.x);
+    const z = Math.round(position.z);
+    return [0.2, 0.9, 1.55].some((offset) =>
+      worldRuntime.getBlockTypeAt(x, Math.floor(position.y + offset + 0.5), z) === "ladder"
+    );
+  }, []);
+
   useFrame((_, rawDelta) => {
     const delta = Math.min(rawDelta, 0.05);
     const position = playerRef.current;
@@ -209,7 +223,7 @@ export default function PlayerController({ playerRef, mountRef, controlsEnabled 
       const stored = mobs.find((mob) => mob.id === mount.id);
       const mounted = runtime?.id === mount.id ? runtime : stored;
       if (mounted) {
-        const shiftDown = Boolean(keys.current.ShiftLeft || keys.current.ShiftRight);
+        const shiftDown = Boolean(keys.current.sprint);
         if (shiftDown && !dismountLatchRef.current) {
           dismountLatchRef.current = true;
           const side = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
@@ -240,15 +254,49 @@ export default function PlayerController({ playerRef, mountRef, controlsEnabled 
       dismountLatchRef.current = false;
     }
 
-    const sprinting = Boolean(keys.current.ShiftLeft || keys.current.ShiftRight);
-    const inWater = isWaterAt(position);
+    if (seated?.position) {
+      const wantsStand = Boolean(keys.current.jump || keys.current.crouch || keys.current.sprint || keys.current.forward || keys.current.backward || keys.current.left || keys.current.right);
+      if (wantsStand) { dispatch(standUp()); position.y = seated.position[1] + 0.2; }
+      else {
+        position.x = seated.position[0]; position.y = seated.position[1] + 0.05; position.z = seated.position[2];
+        yawRef.current = Number(seated.yaw) || yawRef.current; camera.rotation.set(pitchRef.current, yawRef.current, 0, "YXZ");
+        camera.position.set(position.x, position.y + 1.22, position.z);
+        velocityY.current = 0; grounded.current = true; return;
+      }
+    }
 
-    const moveAxis = (axis, amount) => {
+    autoStepCooldownRef.current = Math.max(0, autoStepCooldownRef.current - delta);
+    const sprinting = Boolean(keys.current.sprint);
+    const inWater = isWaterAt(position);
+    const onLadder = isLadderAt(position);
+
+    const moveAxis = (axis, amount, allowAutoStep = false) => {
       if (Math.abs(amount) < 0.000001) return false;
       const candidate = { ...position, [axis]: position[axis] + amount };
       if (!collidesAt(candidate)) {
         position[axis] = candidate[axis];
         return true;
+      }
+
+      // Ground traversal: when moving forward or sprinting into a single full
+      // block, automatically step onto it. Full capsule clearance plus a support
+      // probe prevents climbing two-block walls, ceilings, fences, or corners.
+      if (allowAutoStep && grounded.current && !inWater && autoStepCooldownRef.current <= 0) {
+        const raised = findSupportedOneBlockAutoStep({
+          position,
+          candidate,
+          collidesAt,
+          maxStep: AUTO_STEP_MAX_HEIGHT,
+        });
+        if (raised) {
+          position[axis] = candidate[axis];
+          position.y = raised.y;
+          velocityY.current = Math.max(AUTO_STEP_HOP_VELOCITY, velocityY.current);
+          grounded.current = false;
+          autoStepCooldownRef.current = AUTO_STEP_COOLDOWN;
+          window.dispatchEvent(new CustomEvent("voxel:auto-step", { detail: { height: raised.stepHeight } }));
+          return true;
+        }
       }
 
       // Swim out of water onto a shoreline whose top is roughly level with the water.
@@ -274,8 +322,8 @@ export default function PlayerController({ playerRef, mountRef, controlsEnabled 
       if (forward.current.lengthSq() > 0) forward.current.normalize();
       right.current.crossVectors(forward.current, UP).normalize();
 
-      const forwardInput = (keys.current.KeyW ? 1 : 0) - (keys.current.KeyS ? 1 : 0);
-      const sideInput = (keys.current.KeyD ? 1 : 0) - (keys.current.KeyA ? 1 : 0);
+      const forwardInput = (keys.current.forward ? 1 : 0) - (keys.current.backward ? 1 : 0);
+      const sideInput = (keys.current.right ? 1 : 0) - (keys.current.left ? 1 : 0);
 
       movement.current
         .set(0, 0, 0)
@@ -288,19 +336,27 @@ export default function PlayerController({ playerRef, mountRef, controlsEnabled 
       const speed = (inWater ? 3.3 : sprinting ? 7.4 : 4.8) * movementMultiplier;
       movement.current.multiplyScalar(speed * delta);
 
-      moveAxis("x", movement.current.x);
-      moveAxis("z", movement.current.z);
+      const autoStepIntent = !inWater && movement.current.lengthSq() > 0.0001 && (forwardInput > 0 || sprinting);
+      moveAxis("x", movement.current.x, autoStepIntent);
+      moveAxis("z", movement.current.z, autoStepIntent);
 
-      if (inWater && keys.current.Space) {
+      if (onLadder) {
+        const climbInput = (keys.current.jump || keys.current.forward ? 1 : 0) - (keys.current.crouch || keys.current.backward ? 1 : 0);
+        const agility = Math.max(1, progression?.stats?.agility || 1);
+        const climbSpeed = 3.3 * (1 + (agility - 1) * 0.012) * (hasPerk(progression, "parkour") ? 1.22 : 1);
+        velocityY.current = climbInput * climbSpeed;
+        grounded.current = false;
+      } else if (inWater && keys.current.jump) {
         velocityY.current = Math.min(4.2, velocityY.current + 12 * delta);
         grounded.current = false;
-      } else if (keys.current.Space && grounded.current) {
+      } else if (keys.current.jump && grounded.current) {
         velocityY.current = getJumpVelocity(progression);
         grounded.current = false;
       }
     }
 
-    if (isWaterAt(position)) velocityY.current = Math.max(-2.2, velocityY.current - 4.5 * delta);
+    if (isLadderAt(position)) velocityY.current = Math.max(-3.3, Math.min(3.3, velocityY.current));
+    else if (isWaterAt(position)) velocityY.current = Math.max(-2.2, velocityY.current - 4.5 * delta);
     else velocityY.current -= 23 * delta;
     const fallingVelocity = velocityY.current;
     const nextY = { ...position, y: position.y + velocityY.current * delta };

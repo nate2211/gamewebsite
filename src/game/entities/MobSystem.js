@@ -13,6 +13,7 @@ import {
   syncMountedMob,
 } from "../../features/world/worldSlice";
 import { createMob, isNightOnly, MOB_TYPES } from "../config/mobTypes";
+import { ITEM_TYPES } from "../config/blockTypes";
 import { SEA_LEVEL, sampleSurfaceProfile } from "../world/generation/worldGenerator";
 import useKeyboard from "../player/useKeyboard";
 import { useMobDisplaySettings } from "../config/mobDisplaySettings";
@@ -30,9 +31,10 @@ import {
 import { rememberTarget, rememberThreat, updateSensoryMemory } from "./ai/sensoryMemory";
 import { applyPlannedActivity, chooseContextualActivity } from "./ai/activityPlanner";
 import { steerAroundTerrain } from "./ai/terrainSteering";
+import { areFactionsHostile } from "../config/factions";
 
 const CENTER = new THREE.Vector2(0, 0);
-const BIPEDS = new Set(["zombie", "skeleton", "iron_golem", "colonist"]);
+const BIPEDS = new Set(["zombie", "skeleton", "plague_zombie", "rune_skeleton", "elite_zombie", "warlord_skeleton", "iron_golem", "arcane_golem", "stone_titan", "void_lich", "emberling", "colonist", "villager_scholar", "villager_guard", "villager_farmer", "villager_blacksmith", "villager_healer", "villager_cartographer", "villager_merchant", "sunspire_guard", "sunspire_citizen", "ironroot_guard", "ironroot_citizen", "tideborn_guard", "tideborn_citizen"]);
 const HIT_RADIUS = 7;
 const FORWARD = new THREE.Vector3();
 const RIGHT = new THREE.Vector3();
@@ -43,7 +45,7 @@ const HITBOX_GEOMETRY = new THREE.BoxGeometry(1, 1, 1);
 // All voxel creature rigs are authored facing local -Z. AI headings use +Z as
 // forward, so the visual root needs a half-turn to face its actual velocity.
 const MODEL_FORWARD_YAW = Math.PI;
-const QUADRUPEDS = new Set(["sheep", "cow", "pig", "horse", "wolf"]);
+const QUADRUPEDS = new Set(["sheep", "cow", "pig", "horse", "wolf", "triceratops"]);
 
 function findNearbyOceanTarget(seed, x, z) {
   let best = null;
@@ -141,7 +143,7 @@ function applyMobDeathPose(group, mob, definition, progress, current) {
     group.rotation.z = side * eased * 1.45;
     group.rotation.x = eased * 0.45;
     group.position.y = current.y - eased * 1.15;
-  } else if (mob.type === "slime") {
+  } else if (["slime", "spore_slime"].includes(mob.type)) {
     group.scale.set(1 + eased * 0.8, Math.max(0.05, 1 - eased * 0.92), 1 + eased * 0.8);
     group.position.y = current.y - eased * 0.42;
   } else if (BIPEDS.has(mob.type)) {
@@ -165,10 +167,17 @@ function applyMobDeathPose(group, mob, definition, progress, current) {
 
 function mobLabelHeight(type) {
   if (type === "iron_golem") return 3.45;
-  if (type === "spider") return 1.55;
+  if (["spider", "venom_spider"].includes(type)) return 1.55;
   if (type === "horse") return 2.55;
   if (type === "boat") return 1.25;
   if (type === "bird") return 1.25;
+  if (type === "sky_dragon") return 3.4;
+  if (type === "ember_wyrm") return 4.25;
+  if (type === "stone_titan") return 5.1;
+  if (type === "void_lich") return 3.25;
+  if (type === "hydra") return 4.0;
+  if (type === "sea_serpent") return 2.0;
+  if (["raptor", "triceratops", "tyrannosaur"].includes(type)) return type === "tyrannosaur" ? 4.5 : type === "triceratops" ? 2.8 : 2.4;
   if (["shark", "dolphin", "big_fish"].includes(type)) return 1.45;
   if (BIPEDS.has(type)) return 2.75;
   return 1.85;
@@ -381,7 +390,8 @@ function TurtleModel({ definition, headRef, legRefs }) {
 }
 
 function BipedModel({ mob, type, definition, headRef, legRefs }) {
-  const golem = type === "iron_golem";
+  const golem = type === "iron_golem" || type === "arcane_golem" || type === "stone_titan";
+  const boss = Boolean(definition.boss);
   const headY = golem ? 2.58 : 2.04;
   const bodyY = golem ? 1.38 : 1.18;
   const bodyScale = golem ? [1.18, 1.55, 0.72] : definition.scale;
@@ -392,7 +402,7 @@ function BipedModel({ mob, type, definition, headRef, legRefs }) {
       <Part color={definition.headColor} position={[0, bodyY + 0.48, 0.18]} scale={[bodyScale[0] * 0.74, 0.16, 0.12]} />
       <Part color="#2f2118" position={[0, bodyY - 0.42, -0.01]} scale={[bodyScale[0] * 0.84, 0.12, bodyScale[2] * 0.68]} />
       <Part color={definition.headColor} position={[0, headY, -0.03]} scale={golem ? [0.82, 0.72, 0.78] : [0.72, 0.72, 0.72]} meshRef={headRef} />
-      <FaceEyes y={headY + 0.08} z={golem ? -0.44 : -0.41} spread={0.2} eyeColor={type === "zombie" ? "#d33b3b" : "#242424"} />
+      <FaceEyes y={headY + 0.08} z={golem ? -0.44 : -0.41} spread={0.2} eyeColor={type === "zombie" ? "#d33b3b" : type === "arcane_golem" ? "#7df2ff" : "#242424"} />
       {golem && <Part color="#9e9b8b" position={[0, headY - 0.08, -0.48]} scale={[0.18, 0.32, 0.22]} />}
       {[-1, 1].map((side, index) => (
         <group key={`arm-${side}`} ref={(node) => { legRefs.current[index] = node; }} position={[side * (golem ? 0.78 : 0.52), golem ? 1.28 : 1.24, 0]}>
@@ -408,10 +418,47 @@ function BipedModel({ mob, type, definition, headRef, legRefs }) {
           <Part color="#2f2118" position={[0, -0.46, 0.02]} scale={golem ? [0.38, 0.14, 0.46] : [0.24, 0.1, 0.26]} />
         </group>
       ))}
-      {golem && (
+      {type === "iron_golem" && (
         <>
           <Part color="#4e8b58" position={[-0.46, 1.52, -0.38]} scale={[0.12, 0.62, 0.08]} rotation={[0, 0, -0.24]} />
           <Part color="#b76666" position={[-0.5, 1.78, -0.44]} scale={[0.12, 0.12, 0.08]} />
+        </>
+      )}
+      {type === "stone_titan" && (
+        <>
+          <Part color="#463c36" position={[0, 3.08, 0]} scale={[1.08, 0.28, 0.98]} />
+          <Part color="#d8a94e" position={[0, 1.62, -0.43]} scale={[0.58, 0.58, 0.09]} rotation={[0, 0, Math.PI / 4]} />
+          {[-1, 1].map((side) => (
+            <React.Fragment key={`titan-spikes-${side}`}>
+              <Part color="#6f6255" position={[side * 0.78, 2.1, 0.04]} scale={[0.18, 0.62, 0.22]} rotation={[0, 0, side * 0.42]} />
+              <Part color="#a57e38" position={[side * 0.52, 0.62, -0.38]} scale={[0.18, 0.34, 0.08]} />
+            </React.Fragment>
+          ))}
+        </>
+      )}
+      {type === "void_lich" && (
+        <>
+          <Part color="#151022" position={[0, 2.44, 0.02]} scale={[0.92, 0.22, 0.82]} />
+          <Part color="#a96cff" position={[0, 1.35, -0.39]} scale={[0.42, 0.42, 0.08]} rotation={[0, 0, Math.PI / 4]} />
+          {[-1, 1].map((side) => <Part key={`lich-horn-${side}`} color="#d3c3ea" position={[side * 0.32, 2.58, 0.02]} scale={[0.09, 0.42, 0.1]} rotation={[0, 0, side * 0.38]} />)}
+        </>
+      )}
+      {type === "emberling" && (
+        <>
+          <Part color="#ff9e3d" position={[0, 2.35, 0]} scale={[0.46, 0.18, 0.42]} />
+          <Part color="#ffd36a" position={[0, 1.38, -0.39]} scale={[0.3, 0.3, 0.08]} rotation={[0, 0, Math.PI / 4]} />
+        </>
+      )}
+      {type === "arcane_golem" && (
+        <>
+          <Part color="#74e7f2" position={[0, 1.52, -0.39]} scale={[0.38, 0.38, 0.08]} rotation={[0, 0, Math.PI / 4]} />
+          <Part color="#d7b8ff" position={[-0.5, 1.8, -0.39]} scale={[0.09, 0.52, 0.07]} rotation={[0, 0, -0.5]} />
+          <Part color="#d7b8ff" position={[0.5, 1.8, -0.39]} scale={[0.09, 0.52, 0.07]} rotation={[0, 0, 0.5]} />
+        </>
+      )}
+      {boss && type !== "stone_titan" && type !== "void_lich" && (
+        <>
+          {[-1, 1].map((side) => <Part key={`boss-rune-${side}`} color="#f2c96a" position={[side * 0.36, bodyY + 0.2, -0.4]} scale={[0.08, 0.28, 0.05]} />)}
         </>
       )}
       {type === "colonist" && (
@@ -530,6 +577,95 @@ function SpiderModel({ definition, headRef, legRefs }) {
   );
 }
 
+
+function DinosaurModel({ type, definition, headRef, legRefs, tailRef }) {
+  const isRex = type === "tyrannosaur";
+  const isTrike = type === "triceratops";
+  const bodyScale = isTrike ? [1.45, 0.92, 2.15] : isRex ? [1.32, 1.35, 2.2] : [0.78, 0.88, 1.55];
+  const bodyY = isTrike ? 1.08 : isRex ? 1.78 : 1.15;
+  const neckY = isTrike ? 1.25 : isRex ? 2.3 : 1.45;
+  const headZ = isTrike ? -1.8 : isRex ? -1.62 : -1.18;
+  const legHeight = isRex ? 1.62 : isTrike ? 1.02 : 1.15;
+  return (
+    <>
+      <Part color={definition.bodyColor} position={[0, bodyY, 0.1]} scale={bodyScale} />
+      <Part color={definition.headColor} position={[0, neckY, headZ]} scale={isTrike ? [1.3, 0.78, 0.92] : isRex ? [1.05, 0.78, 1.12] : [0.68, 0.52, 0.82]} meshRef={headRef} />
+      {!isTrike && <Part color={definition.bodyColor} position={[0, (bodyY + neckY) / 2, -0.92]} rotation={[-0.52, 0, 0]} scale={isRex ? [0.72, 1.1, 0.68] : [0.42, 0.72, 0.4]} />}
+      <FaceEyes y={neckY + (isRex ? 0.18 : 0.12)} z={headZ - (isTrike ? 0.5 : 0.6)} spread={isTrike ? 0.48 : isRex ? 0.38 : 0.25} eyeColor="#f0c04d" scale={[0.09, 0.09, 0.04]} />
+      <group ref={tailRef} position={[0, bodyY + 0.08, isTrike ? 1.95 : isRex ? 2.0 : 1.35]}>
+        <Part color={definition.bodyColor} position={[0, 0, 0.9]} rotation={[0.08, 0, 0]} scale={isTrike ? [0.62, 0.5, 2.2] : isRex ? [0.58, 0.56, 2.7] : [0.35, 0.34, 1.75]} />
+        <Part color={definition.headColor} position={[0, 0.02, isTrike ? 2.1 : isRex ? 2.55 : 1.65]} scale={isTrike ? [0.28, 0.26, 0.8] : [0.18, 0.2, 0.82]} />
+      </group>
+      {(isTrike ? [[-0.78,-0.75],[0.78,-0.75],[-0.78,0.85],[0.78,0.85]] : [[-0.62,0.35],[0.62,0.35]]).map(([x,z], index) => (
+        <group key={`${x}-${z}`} ref={(node) => { legRefs.current[index] = node; }} position={[x, bodyY - 0.45, z]}>
+          <Part color={definition.bodyColor} position={[0, -legHeight * 0.36, 0]} scale={[isTrike ? 0.38 : 0.3, legHeight * 0.72, isTrike ? 0.42 : 0.32]} />
+          <Part color={definition.headColor} position={[0, -legHeight * 0.82, -0.08]} scale={[isTrike ? 0.44 : 0.34, 0.26, isTrike ? 0.65 : 0.52]} />
+        </group>
+      ))}
+      {!isTrike && [-1, 1].map((side, index) => <Part key={side} color={definition.bodyColor} position={[side * (isRex ? 0.74 : 0.46), bodyY + (isRex ? 0.25 : 0.12), -1.0]} rotation={[0, 0, side * 0.25]} scale={isRex ? [0.18, 0.58, 0.18] : [0.14, 0.42, 0.14]} />)}
+      {isTrike && (
+        <>
+          <Part color="#d8cfaa" position={[0, neckY + 0.16, headZ - 0.82]} rotation={[-0.5, 0, 0]} scale={[0.12, 0.12, 0.85]} />
+          {[-1, 1].map((side) => <Part key={side} color="#d8cfaa" position={[side * 0.58, neckY + 0.25, headZ - 0.35]} rotation={[-0.55, side * 0.18, 0]} scale={[0.11, 0.11, 0.72]} />)}
+          <Part color={definition.bodyColor} position={[0, neckY + 0.28, headZ + 0.42]} scale={[1.65, 1.1, 0.18]} />
+        </>
+      )}
+    </>
+  );
+}
+
+function SeaSerpentModel({ definition, headRef, tailRef }) {
+  return (
+    <>
+      <Part color={definition.bodyColor} position={[0, 0, 0.25]} scale={[1.05, 0.7, 2.25]} />
+      <Part color={definition.headColor} position={[0, 0.15, -2.05]} scale={[0.95, 0.75, 1.0]} meshRef={headRef} />
+      <FaceEyes y={0.34} z={-2.61} spread={0.34} eyeColor="#ffd65c" scale={[0.1, 0.1, 0.04]} />
+      <group ref={tailRef} position={[0, 0, 2.25]}>
+        {[0, 1, 2].map((segment) => <Part key={segment} color={segment % 2 ? definition.headColor : definition.bodyColor} position={[0, 0, 0.85 + segment * 1.25]} scale={[0.78 - segment * 0.16, 0.55 - segment * 0.08, 1.35]} />)}
+      </group>
+      {[-1, 1].map((side) => <Part key={side} color={definition.headColor} position={[side * 0.68, 0.08, -1.7]} rotation={[0, 0, side * 0.55]} scale={[0.52, 0.12, 0.8]} />)}
+      {[-0.65, 0, 0.65].map((z) => <Part key={z} color="#7bc0ad" position={[0, 0.68, z]} rotation={[0.15, 0, 0]} scale={[0.12, 0.48, 0.34]} />)}
+    </>
+  );
+}
+
+function HydraModel({ definition, headRef, tailRef }) {
+  return (
+    <>
+      <Part color={definition.bodyColor} position={[0, 0.9, 0.2]} scale={[1.8, 1.2, 2.25]} />
+      {[-1, 0, 1].map((side, index) => (
+        <group key={side} position={[side * 0.82, 1.35, -1.0]} rotation={[0, side * 0.25, side * -0.08]}>
+          <Part color={definition.bodyColor} position={[0, 0.65, -0.52]} rotation={[-0.42, 0, 0]} scale={[0.42, 1.25, 0.46]} />
+          <Part color={definition.headColor} position={[0, 1.35, -1.04]} scale={[0.68, 0.52, 0.78]} meshRef={index === 1 ? headRef : undefined} />
+          <FaceEyes y={1.48} z={-1.48} spread={0.21} eyeColor="#ffce55" scale={[0.08, 0.08, 0.03]} />
+          {[-1,1].map((horn) => <Part key={horn} color="#d8c89b" position={[horn * 0.28, 1.72, -0.94]} rotation={[-0.45, 0, horn * 0.15]} scale={[0.08, 0.08, 0.48]} />)}
+        </group>
+      ))}
+      <group ref={tailRef} position={[0, 0.86, 2.1]}><Part color={definition.bodyColor} position={[0, 0, 1.4]} scale={[1.05, 0.74, 2.5]} /></group>
+      {[-1,1].map((side) => <Part key={side} color={definition.bodyColor} position={[side * 1.25, 0.48, 0.35]} rotation={[0, 0, side * 0.28]} scale={[0.48, 0.5, 1.2]} />)}
+    </>
+  );
+}
+
+function DragonModel({ definition, headRef, wingRefs, tailRef }) {
+  return (
+    <>
+      <Part color={definition.bodyColor} position={[0, 0, 0.2]} scale={[1.45, 0.9, 2.35]} />
+      <Part color={definition.headColor} position={[0, 0.2, -2.05]} scale={[1.05, 0.72, 1.05]} meshRef={headRef} />
+      <FaceEyes y={0.42} z={-2.62} spread={0.36} eyeColor="#ffe36b" scale={[0.11, 0.11, 0.04]} />
+      {[-1,1].map((side,index) => (
+        <group key={side} ref={(node) => { wingRefs.current[index] = node; }} position={[side * 1.15, 0.42, -0.15]}>
+          <Part color={definition.headColor} position={[side * 1.35, 0, 0.45]} rotation={[0, 0, side * -0.28]} scale={[2.5, 0.12, 1.25]} />
+          <Part color="#8b5a9c" position={[side * 2.6, -0.04, 1.0]} rotation={[0, 0, side * -0.38]} scale={[1.55, 0.08, 1.05]} />
+        </group>
+      ))}
+      <group ref={tailRef} position={[0, 0, 2.25]}>{[0,1,2].map((segment)=><Part key={segment} color={segment % 2 ? definition.headColor : definition.bodyColor} position={[0,0,0.95+segment*1.35]} scale={[0.78-segment*0.16,0.52-segment*0.08,1.45]} />)}</group>
+      {[-1,1].map((side) => <Part key={side} color="#d6b467" position={[side*0.42,0.72,-2.1]} rotation={[-0.55,0,side*0.22]} scale={[0.1,0.1,0.7]} />)}
+      <Part color="#e8bf62" position={[0,-0.2,-2.75]} scale={[0.28,0.16,0.48]} />
+    </>
+  );
+}
+
 function BoatModel() {
   return (
     <>
@@ -598,7 +734,7 @@ function MobVisual({ runtimeMap, mob, registerHitMesh, active, playerRef, displa
       if (attacking && BIPEDS.has(mob.type) && index < 2) {
         leg.rotation.x = index === 0 ? -1.5 + attackStrike * 0.95 : -0.35 + attackRecover * 0.55;
         leg.rotation.z = index === 0 ? -0.18 : 0.14;
-      } else if (attacking && mob.type === "spider") {
+      } else if (attacking && ["spider", "venom_spider"].includes(mob.type)) {
         leg.rotation.x = index < 4 ? -0.45 + attackStrike * 0.9 : 0.25 - attackStrike * 0.26;
         leg.rotation.z = index % 2 === 0 ? -0.68 + attackStrike * 0.22 : 0.68 - attackStrike * 0.22;
       } else if (aquatic) {
@@ -630,7 +766,7 @@ function MobVisual({ runtimeMap, mob, registerHitMesh, active, playerRef, displa
       else tailRef.current.rotation.y = Math.sin(clock.elapsedTime * 4 + current.phase) * 0.34 - attackStrike * 0.18;
     }
 
-    if (mob.type === "slime") {
+    if (["slime", "spore_slime"].includes(mob.type)) {
       const bounce = 1 + Math.sin(clock.elapsedTime * 5 + current.phase) * 0.08;
       group.scale.set(1 / bounce, bounce, 1 / bounce);
     } else if (definition.aquatic || definition.vehicle) {
@@ -655,7 +791,7 @@ function MobVisual({ runtimeMap, mob, registerHitMesh, active, playerRef, displa
     }
 
     if (attacking) {
-      group.translateZ(-(definition.aquatic ? 0.22 : mob.type === "spider" ? 0.2 : BIPEDS.has(mob.type) ? 0.16 : 0.14) * attackStrike);
+      group.translateZ(-(definition.aquatic ? 0.22 : ["spider", "venom_spider"].includes(mob.type) ? 0.2 : BIPEDS.has(mob.type) ? 0.16 : 0.14) * attackStrike);
       group.position.y += attackStrike * (definition.flying ? 0.08 : 0.04);
     }
 
@@ -665,7 +801,7 @@ function MobVisual({ runtimeMap, mob, registerHitMesh, active, playerRef, displa
         ? 0.65 + Math.sin(clock.elapsedTime * 2.2 + current.phase) * 0.18
         : current.behaviorState === "rest" ? 0.12 : 0;
       if (attacking) {
-        headRef.current.rotation.x = (mob.type === "spider" ? -0.08 : -0.18) + attackStrike * (definition.aquatic ? 0.5 : 0.34);
+        headRef.current.rotation.x = (["spider", "venom_spider"].includes(mob.type) ? -0.08 : -0.18) + attackStrike * (definition.aquatic ? 0.5 : 0.34);
         headRef.current.rotation.y *= 0.25;
       } else if (aquatic) {
         headRef.current.rotation.y = Math.sin(clock.elapsedTime * 4.8 + current.phase) * 0.2;
@@ -686,20 +822,27 @@ function MobVisual({ runtimeMap, mob, registerHitMesh, active, playerRef, displa
   const biped = BIPEDS.has(mob.type);
   const aquatic = Boolean(definition.aquatic && !definition.amphibious && !definition.vehicle);
   const bird = Boolean(definition.flying);
+  const dinosaur = Boolean(definition.dinosaur);
   const boat = mob.type === "boat";
   const friendly = Boolean(definition.friendly || mob.tamed);
+  const modelDetail = typeof window === "undefined" ? "high" : localStorage.getItem("voxel:modelDetail") || "high";
+  const detailLevel = modelDetail === "cinematic" ? 3 : modelDetail === "ultra" ? 2 : modelDetail === "high" ? 1 : 0;
+  const bodyWidth = Math.max(0.55, Number(definition.scale?.[0] || 1));
+  const bodyHeight = Math.max(0.7, Number(definition.scale?.[1] || 1));
+  const bodyDepth = Math.max(0.55, Number(definition.scale?.[2] || 1));
+  const detailY = biped ? Math.min(mobLabelHeight(mob.type) - 0.9, bodyHeight * 0.62) : Math.max(0.35, bodyHeight * 0.32);
   const hitboxScale = boat
     ? [1.55, 0.6, 2.15]
     : aquatic
       ? definition.scale
       : biped
         ? [Math.max(0.72, definition.scale[0]), Math.max(1.7, definition.scale[1]), Math.max(0.52, definition.scale[2])]
-        : mob.type === "spider"
+        : ["spider", "venom_spider"].includes(mob.type)
           ? [1.6, 0.85, 1.8]
           : mob.type === "horse"
           ? [1.1, 1.9, 1.8]
           : [Math.max(0.7, definition.scale[0]), Math.max(0.9, definition.scale[1]), Math.max(0.8, definition.scale[2])];
-  const hitboxY = boat ? 0.35 : aquatic || bird ? 0 : biped ? 1.25 : mob.type === "horse" ? 1.05 : mob.type === "spider" ? 0.55 : 0.65;
+  const hitboxY = boat ? 0.35 : aquatic || bird ? 0 : biped ? 1.25 : mob.type === "horse" ? 1.05 : ["spider", "venom_spider"].includes(mob.type) ? 0.55 : 0.65;
 
   return (
     <group ref={groupRef} visible={active}>
@@ -710,6 +853,14 @@ function MobVisual({ runtimeMap, mob, registerHitMesh, active, playerRef, displa
 
       {boat ? (
         <BoatModel />
+      ) : mob.type === "hydra" ? (
+        <HydraModel definition={definition} headRef={headRef} tailRef={tailRef} />
+      ) : mob.type === "sea_serpent" ? (
+        <SeaSerpentModel definition={definition} headRef={headRef} tailRef={tailRef} />
+      ) : mob.type === "sky_dragon" || mob.type === "ember_wyrm" ? (
+        <DragonModel definition={definition} headRef={headRef} wingRefs={wingRefs} tailRef={tailRef} />
+      ) : dinosaur ? (
+        <DinosaurModel type={mob.type} definition={definition} headRef={headRef} legRefs={legRefs} tailRef={tailRef} />
       ) : aquatic ? (
         <AquaticModel type={mob.type} definition={definition} headRef={headRef} tailRef={tailRef} />
       ) : bird ? (
@@ -718,14 +869,35 @@ function MobVisual({ runtimeMap, mob, registerHitMesh, active, playerRef, displa
         <TurtleModel definition={definition} headRef={headRef} legRefs={legRefs} />
       ) : mob.type === "chicken" ? (
         <ChickenModel definition={definition} headRef={headRef} legRefs={legRefs} wingRefs={wingRefs} />
-      ) : mob.type === "spider" ? (
+      ) : ["spider", "venom_spider"].includes(mob.type) ? (
         <SpiderModel definition={definition} headRef={headRef} legRefs={legRefs} />
-      ) : mob.type === "slime" ? (
+      ) : ["slime", "spore_slime"].includes(mob.type) ? (
         <SlimeModel definition={definition} />
       ) : biped ? (
         <BipedModel mob={mob} type={mob.type} definition={definition} headRef={headRef} legRefs={legRefs} />
       ) : (
         <QuadrupedDetails type={mob.type} definition={definition} headRef={headRef} legRefs={legRefs} tailRef={tailRef} />
+      )}
+
+      {detailLevel >= 1 && !boat && (
+        <>
+          {[-1, 1].map((side) => (
+            <Part key={`detail-shoulder-${side}`} color={definition.headColor || definition.bodyColor} position={[side * Math.min(0.72, bodyWidth * 0.38), detailY, -Math.min(0.42, bodyDepth * 0.28)]} scale={[0.09 + detailLevel * 0.025, 0.16 + detailLevel * 0.04, 0.07]} />
+          ))}
+          <Part color={definition.eyeColor || (definition.hostile ? "#ff8669" : "#d8f6ff")} position={[0, detailY + 0.08, -Math.min(0.48, bodyDepth * 0.34)]} scale={[0.13 + detailLevel * 0.035, 0.08 + detailLevel * 0.02, 0.045]} emissive={definition.eyeColor || (definition.hostile ? "#6d160d" : "#173845")} emissiveIntensity={definition.boss ? 1.25 : 0.35} />
+        </>
+      )}
+      {detailLevel >= 2 && !boat && (
+        <>
+          {[-1, 1].map((side) => <Part key={`detail-side-${side}`} color={definition.bodyColor} position={[side * Math.min(0.58, bodyWidth * 0.31), detailY - 0.26, 0.16]} scale={[0.07, 0.24, 0.09]} rotation={[0, 0, side * 0.22]} />)}
+          <Part color="#c7a868" position={[0, detailY - 0.32, -Math.min(0.5, bodyDepth * 0.32)]} scale={[0.22, 0.045, 0.055]} />
+        </>
+      )}
+      {detailLevel >= 3 && !boat && (
+        <>
+          {[-0.3, -0.1, 0.1, 0.3].map((offset, index) => <Part key={`micro-voxel-${offset}`} color={index % 2 ? definition.headColor : definition.bodyColor} position={[offset * Math.min(1.2, bodyWidth), detailY + 0.28 + Math.abs(offset) * 0.18, 0.08]} scale={[0.045, 0.07, 0.05]} />)}
+          {definition.hostile && <Part color="#7b2431" position={[0, detailY + 0.38, -0.12]} scale={[0.28, 0.06, 0.08]} />}
+        </>
       )}
 
       {friendly && !boat && (
@@ -781,6 +953,13 @@ export default function MobSystem({ playerRef, targetRef, mountRef, enabled = tr
   const playerState = useSelector((state) => state.world.player);
   const colony = useSelector((state) => state.world.colony);
   const weather = useSelector((state) => state.world.weather);
+  const selectedWeaponReach = useSelector((state) => {
+    const itemId = state.world.hotbar[state.world.selectedIndex] || null;
+    if (!itemId || (state.world.inventory[itemId] || 0) <= 0) return 0;
+    const definition = ITEM_TYPES[itemId];
+    const enchantReach = Number(state.world.enchantments?.[itemId]?.reach || definition?.preEnchanted?.reach || 0);
+    return Math.max(0, Number(definition?.reach || 0) + enchantReach * 0.35);
+  });
   const { camera } = useThree();
   const keys = useKeyboard();
   const runtimeMap = useRef({});
@@ -822,6 +1001,10 @@ export default function MobSystem({ playerRef, targetRef, mountRef, enabled = tr
         activitySpeedMultiplier: current?.activitySpeedMultiplier ?? 1,
         actionState: current?.actionState ?? "idle",
         actionUntil: current?.actionUntil ?? 0,
+        homeX: current?.homeX ?? mob.homeX ?? mob.x,
+        homeY: current?.homeY ?? mob.homeY ?? mob.y,
+        homeZ: current?.homeZ ?? mob.homeZ ?? mob.z,
+        homeRadius: current?.homeRadius ?? mob.homeRadius ?? null,
       };
     });
     runtimeMap.current = nextMap;
@@ -974,7 +1157,24 @@ export default function MobSystem({ playerRef, targetRef, mountRef, enabled = tr
         }
 
         if (!target && (definition.friendly || mob.tamed)) {
-          target = nearestMob(
+          if (mob.factionId || definition.factionId) {
+            const ownFaction = mob.factionId || definition.factionId;
+            target = nearestMob(
+              aiMobs,
+              runtimeMap,
+              runtime,
+              (candidate) => {
+                const rivalFaction = candidate.factionId || MOB_TYPES[candidate.type]?.factionId;
+                return areFactionsHostile(ownFaction, rivalFaction) && !candidate.dyingUntil;
+              },
+              definition.guardian ? 26 : 12
+            );
+            if (target) {
+              rememberTarget(runtime, target, "rival faction");
+              targetKind = "faction";
+            }
+          }
+          if (!target) target = nearestMob(
             aiMobs,
             runtimeMap,
             runtime,
@@ -990,7 +1190,7 @@ export default function MobSystem({ playerRef, targetRef, mountRef, enabled = tr
             rememberTarget(runtime, target, "hostile");
             targetKind = "hostile";
           }
-          else if (mob.tamed || definition.friendly) {
+          else if ((mob.tamed || definition.friendly) && !definition.villager && !mob.housingBedKey) {
             const playerDistance = Math.sqrt(distanceSqToPlayer);
             if (playerDistance > 7 && !definition.aquatic) {
               target = { runtime: player, distance: playerDistance };
@@ -998,7 +1198,9 @@ export default function MobSystem({ playerRef, targetRef, mountRef, enabled = tr
             }
           }
         } else if (!target && definition.hostile) {
-          const playerDistance = Math.sqrt(distanceSqToPlayer);
+          const playerDistance = definition.caveDweller
+            ? Math.hypot(Math.sqrt(distanceSqToPlayer), Math.abs(player.y - runtime.y))
+            : Math.sqrt(distanceSqToPlayer);
           const guardTarget = nearestMob(
             aiMobs,
             runtimeMap,
@@ -1053,6 +1255,17 @@ export default function MobSystem({ playerRef, targetRef, mountRef, enabled = tr
           }
         }
 
+        const hasHome = Number.isFinite(runtime.homeRadius) && runtime.homeRadius > 0;
+        const homeDistance = hasHome ? Math.hypot(runtime.x - runtime.homeX, runtime.z - runtime.homeZ) : 0;
+        if (!target && hasHome && homeDistance > runtime.homeRadius * 0.68) {
+          target = {
+            runtime: { x: runtime.homeX, y: runtime.homeY, z: runtime.homeZ },
+            distance: homeDistance,
+          };
+          targetKind = "home";
+          runtime.behaviorState = "return-home";
+        }
+
         let speed = definition.aquatic ? definition.swimSpeed || definition.speed : definition.speed;
         if (targetKind === "flee") {
           const dx = runtime.x - target.runtime.x;
@@ -1068,18 +1281,25 @@ export default function MobSystem({ playerRef, targetRef, mountRef, enabled = tr
           const dz = target.runtime.z - runtime.z;
           runtime.direction = Math.atan2(dx, dz);
           steerAroundTerrain(runtime, definition, seed, sampleSurfaceProfile, targetKind === "follow" ? 1.5 : 2.1);
-          const stopDistance = targetKind === "follow" ? 3.2 : definition.attackRange || 1.2;
+          const stopDistance = targetKind === "follow" ? 3.2 : targetKind === "home" ? 1.1 : definition.attackRange || 1.2;
           if (target.distance > stopDistance) {
             runtime.x += Math.sin(runtime.direction) * speed * aiStep;
             runtime.z += Math.cos(runtime.direction) * speed * aiStep;
             runtime.moving = true;
           }
-          if (targetKind !== "follow" && target.distance <= (definition.attackRange || 1.2) && runtime.attackCooldown <= 0) {
+          if (!["follow", "home"].includes(targetKind) && target.distance <= (definition.attackRange || 1.2) && runtime.attackCooldown <= 0) {
             runtime.attackCooldown = definition.attackCooldown || 1;
             runtime.actionState = "attack";
             runtime.actionUntil = Date.now() + 520;
-            if (targetKind === "player") dispatch(damagePlayer(definition.attackDamage || 1));
-            else if (targetKind === "station" && target.station) dispatch(damageColonyStation({ stationId: target.station.id, amount: definition.attackDamage || 2 }));
+            if (targetKind === "player") {
+              dispatch(damagePlayer(definition.attackDamage || 1));
+              if (definition.specialAttack && Math.random() < 0.28) {
+                const bonus = Math.max(1, Math.ceil((definition.attackDamage || 1) * 0.45));
+                dispatch(damagePlayer(bonus));
+                runtime.actionState = "special";
+                runtime.actionUntil = Date.now() + 760;
+              }
+            } else if (targetKind === "station" && target.station) dispatch(damageColonyStation({ stationId: target.station.id, amount: definition.attackDamage || 2 }));
             else if (target.mob) dispatch(mobCombatHit({ targetId: target.mob.id, amount: definition.attackDamage || 2, friendlyAttack: Boolean(definition.friendly || mob.tamed) }));
           }
         } else {
@@ -1108,6 +1328,18 @@ export default function MobSystem({ playerRef, targetRef, mountRef, enabled = tr
           }
         }
 
+        if (hasHome && !definition.flying && !definition.aquatic) {
+          const dxHome = runtime.x - runtime.homeX;
+          const dzHome = runtime.z - runtime.homeZ;
+          const distanceHome = Math.hypot(dxHome, dzHome);
+          if (distanceHome > runtime.homeRadius) {
+            const scale = runtime.homeRadius / Math.max(0.001, distanceHome);
+            runtime.x = runtime.homeX + dxHome * scale;
+            runtime.z = runtime.homeZ + dzHome * scale;
+            runtime.direction = Math.atan2(runtime.homeX - runtime.x, runtime.homeZ - runtime.z);
+          }
+        }
+
         if (definition.flying) {
           const profile = sampleSurfaceProfile(seed, runtime.x, runtime.z);
           const desired = Math.max(profile.height, SEA_LEVEL) + 8 + Math.sin(performance.now() * 0.0007 + runtime.phase) * 3;
@@ -1129,6 +1361,9 @@ export default function MobSystem({ playerRef, targetRef, mountRef, enabled = tr
           }
           const waterSurface = Math.max(profile.height + 1.1, SEA_LEVEL - 3.2);
           runtime.y = THREE.MathUtils.clamp(runtime.y + Math.sin(performance.now() * 0.001 + runtime.phase) * 0.025, waterSurface, SEA_LEVEL - 0.45);
+        } else if (definition.caveDweller) {
+          const homeY = Number.isFinite(runtime.homeY) ? runtime.homeY : Number(mob.homeY || mob.y || 3);
+          runtime.y += (homeY - runtime.y) * 0.18;
         } else {
           const profile = sampleSurfaceProfile(seed, runtime.x, runtime.z);
           runtime.y = profile.height + 0.52;
@@ -1139,18 +1374,30 @@ export default function MobSystem({ playerRef, targetRef, mountRef, enabled = tr
     mobRaycastTimer.current += delta;
     if (mobRaycastTimer.current >= 1 / 30) {
       mobRaycastTimer.current = 0;
+      raycaster.far = HIT_RADIUS + selectedWeaponReach;
       raycaster.setFromCamera(CENTER, camera);
       const activeMeshes = visibleMobs
         .map((entry) => entry.mob)
         .filter((mob) => !mob.dyingUntil && isActiveAtTime(MOB_TYPES[mob.type], night))
         .filter((mob) => {
           const runtime = runtimeMap.current[mob.id];
-          return runtime && (runtime.x - player.x) ** 2 + (runtime.z - player.z) ** 2 <= HIT_RADIUS * HIT_RADIUS;
+          const activeHitRadius = HIT_RADIUS + selectedWeaponReach;
+          return runtime && (runtime.x - player.x) ** 2 + (runtime.z - player.z) ** 2 <= activeHitRadius * activeHitRadius;
         })
         .map((mob) => hitMeshes.current[mob.id])
         .filter(Boolean);
       const hit = raycaster.intersectObjects(activeMeshes, false)[0];
-      targetRef.current = hit ? { kind: "mob", mobId: hit.object.userData.mobId, distance: hit.distance } : null;
+      if (hit) {
+        const targetMob = mobs.find((candidate) => candidate.id === hit.object.userData.mobId);
+        targetRef.current = {
+          kind: "mob",
+          mobId: hit.object.userData.mobId,
+          mobType: targetMob?.type,
+          housingBedKey: targetMob?.housingBedKey || null,
+          position: targetMob ? [targetMob.x, targetMob.y + 1, targetMob.z] : null,
+          distance: hit.distance,
+        };
+      } else targetRef.current = null;
     }
 
     ambientTimer.current += delta;

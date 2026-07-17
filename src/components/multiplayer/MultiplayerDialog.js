@@ -28,7 +28,9 @@ function extractAnswerToken(value) {
   if (!raw.includes("answer=")) return raw;
   try {
     const parsed = new URL(raw);
-    const hash = new URLSearchParams(parsed.hash.replace(/^#/, ""));
+    const hashText = parsed.hash.replace(/^#/, "");
+    const hashQuery = hashText.includes("?") ? hashText.slice(hashText.indexOf("?") + 1) : hashText;
+    const hash = new URLSearchParams(hashQuery);
     return hash.get("answer") || parsed.searchParams.get("answer") || "";
   } catch (_) {
     const match = raw.match(/answer=([^&#]+)/);

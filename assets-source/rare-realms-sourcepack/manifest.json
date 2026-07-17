@@ -1,0 +1,55 @@
+{
+  "pack": "Rare Realms Source Texture Pack",
+  "version": "17.0.0",
+  "license": "Original procedural project assets",
+  "files": [
+    {
+      "file": "gravewatch-stone-master-2048.png",
+      "bytes": 12589062,
+      "sha256": "23b3e13ffb19941403c53c75c328ad83d03cf30f4cb511633149a31c08f00ee4",
+      "purpose": "source atlas for rare structures, village professions, treasure, and weathering"
+    },
+    {
+      "file": "bandit-timber-master-2048.png",
+      "bytes": 12589062,
+      "sha256": "09054d7e4d38ac123f37b4ce03adec482268d9b4b08548d54970f4be5df30c31",
+      "purpose": "source atlas for rare structures, village professions, treasure, and weathering"
+    },
+    {
+      "file": "village-professions-cloth-master-2048.png",
+      "bytes": 12589062,
+      "sha256": "73ce560b6d4ce0e0aef02d5609774d490a03aa56a9c2d5e470faa958341cd60a",
+      "purpose": "source atlas for rare structures, village professions, treasure, and weathering"
+    },
+    {
+      "file": "treasure-metal-trim-master-2048.png",
+      "bytes": 12589062,
+      "sha256": "7b138d025f082427331808baae8d875224a9d02250f9d5204454b1dcb253992b",
+      "purpose": "source atlas for rare structures, village professions, treasure, and weathering"
+    },
+    {
+      "file": "rune-carving-normal-master-2048.png",
+      "bytes": 12589062,
+      "sha256": "5fce4304183f6c343734f503c21ae3aefec839e408eaa104bbd0bb401751e682",
+      "purpose": "source atlas for rare structures, village professions, treasure, and weathering"
+    },
+    {
+      "file": "structure-decals-master-2048.png",
+      "bytes": 12589062,
+      "sha256": "f9d66b98633019242f81f98c692f4286a28625fa515322951d46cd1387ea1eaf",
+      "purpose": "source atlas for rare structures, village professions, treasure, and weathering"
+    },
+    {
+      "file": "village-props-master-2048.png",
+      "bytes": 12589062,
+      "sha256": "ef78f444c056764e56663ed777ef0925e441dd2f95505f9c9b113e252cfa0553",
+      "purpose": "source atlas for rare structures, village professions, treasure, and weathering"
+    },
+    {
+      "file": "rare-landmark-weathering-master-2048.png",
+      "bytes": 12589062,
+      "sha256": "7b26042fe48d4263006eca910b848691f515633c00d3bef18dc9734aa6a9dfaa",
+      "purpose": "source atlas for rare structures, village professions, treasure, and weathering"
+    }
+  ]
+}

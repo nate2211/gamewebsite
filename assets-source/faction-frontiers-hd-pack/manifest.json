@@ -1,0 +1,22 @@
+{
+  "release": "Faction Frontiers v24.0.0",
+  "resolution": "4096x4096",
+  "license": "Original project source art",
+  "files": [
+    {
+      "file": "colony-command-hay-nuggets-4096.png",
+      "bytes": 23400472,
+      "sha256": "5fcdeda1243a7f438b54bd3a8a232138f55a504435e9ad2f931c919d408d5789"
+    },
+    {
+      "file": "faction-heraldry-patrols-4096.png",
+      "bytes": 22356956,
+      "sha256": "67ca3a95f367acd0c8e485c0ef6cde25e279a512734671705ccdfe36cc30b40a"
+    },
+    {
+      "file": "frontier-construction-materials-4096.png",
+      "bytes": 23047376,
+      "sha256": "f2b1d3247a8cf9ffa7a3fbbd9ef574f9ec9bb901ed378a88e8d301b7de1723b7"
+    }
+  ]
+}

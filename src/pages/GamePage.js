@@ -11,6 +11,7 @@ import Hud from "../components/game/hud/Hud";
 import { preloadItemIcons } from "../components/items/icons/ItemIcon";
 import PauseOverlay from "../components/game/overlays/PauseOverlay";
 import { db, serializeWorld } from "../data/db";
+import { getBoundCode } from "../game/config/keybindings";
 import {
   clearWorld,
   completeFurnaceJobs,
@@ -34,6 +35,12 @@ import {
 } from "../game/world/loading/worldBootstrap";
 
 const POINTER_RELOCK_COOLDOWN_MS = 700;
+
+function isTypingTarget(target) {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName?.toLowerCase();
+  return tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable || Boolean(target.closest?.('[data-recipe-search="true"]'));
+}
 
 export default function GamePage() {
   const { worldId } = useParams();
@@ -161,7 +168,7 @@ export default function GamePage() {
         db.worlds.update(record.id, {
           bootstrapRadius: LOAD_SAFETY_RADIUS,
           player: hydrated.player,
-          version: 14,
+          version: 24,
         }).catch(console.error);
 
         setLoadingStage("Mounting voxel meshes…");
@@ -273,6 +280,8 @@ export default function GamePage() {
     const onPointerLockChange = () => {
       const locked = document.pointerLockElement === canvasRef.current;
       setPointerLocked(locked);
+      document.body.style.cursor = locked ? "none" : "default";
+      if (canvasRef.current) canvasRef.current.style.cursor = locked ? "none" : "default";
       requestInFlightRef.current = false;
       if (!locked) armResumeCooldown();
       else { setPointerError(""); setInventoryResumePending(false); }
@@ -338,7 +347,8 @@ export default function GamePage() {
 
   useEffect(() => {
     const onKeyDown = (event) => {
-      if (event.code !== "KeyE" || event.repeat || !store.getState().world.loaded) return;
+      if (isTypingTarget(event.target)) return;
+      if (event.code !== getBoundCode("inventory") || event.repeat || !store.getState().world.loaded) return;
       event.preventDefault();
       event.stopPropagation();
       if (openStation) closeInventoryWithE();
@@ -347,6 +357,19 @@ export default function GamePage() {
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [closeInventoryWithE, openStation, openWorkstation, store]);
+
+  useEffect(() => {
+    const revealCursorOnEscape = (event) => {
+      if (event.code !== "Escape") return;
+      setInventoryResumePending(false);
+      setPointerError("");
+      document.body.style.cursor = "default";
+      if (canvasRef.current) canvasRef.current.style.cursor = "default";
+      if (document.pointerLockElement) document.exitPointerLock();
+    };
+    window.addEventListener("keydown", revealCursorOnEscape, true);
+    return () => window.removeEventListener("keydown", revealCursorOnEscape, true);
+  }, []);
 
   const loadAreaReady = world.loaded
     && isLoadAreaReady(runtimeSnapshot, playerRef.current, LOAD_SAFETY_RADIUS);

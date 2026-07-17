@@ -17,6 +17,11 @@ export const DEFAULT_METRICS = Object.freeze({
   smeltsCompleted: 0,
   mobsDefeated: 0,
   hostilesDefeated: 0,
+  eliteEnemiesDefeated: 0,
+  fossilsRecovered: 0,
+  treasureChestsOpened: 0,
+  dinosaursRevived: 0,
+  villageQuestsCompleted: 0,
 });
 
 export function getQuestProgress(quest, world) {

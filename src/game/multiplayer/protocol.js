@@ -1,4 +1,4 @@
-export const MULTIPLAYER_PROTOCOL_VERSION = 3;
+export const MULTIPLAYER_PROTOCOL_VERSION = 5;
 
 export const MESSAGE = Object.freeze({
   HELLO: "HELLO",
@@ -16,10 +16,18 @@ const SHARED_KEYS = [
   "blockEdits",
   "mobs",
   "furnaces",
+  "storageChests",
   "colony",
+  "housing",
+  "bosses",
   "crops",
   "droppedItems",
   "weather",
+  "enchantments",
+  "openedTreasureChests",
+  "villageQuests",
+  "factions",
+  "archaeology",
   "worldTime",
   "revision",
 ];
@@ -30,6 +38,11 @@ const PLAYER_KEYS = [
   "armor",
   "armorDurability",
   "progression",
+  "arcana",
+  "enchantments",
+  "villageQuests",
+  "factions",
+  "archaeology",
   "metrics",
   "claimedQuests",
   "hotbar",

@@ -6,6 +6,7 @@ import { applyMultiplayerWorldState, upsertMultiplayerPlayer } from "../../featu
 import { worldRuntime } from "../core/worldRuntime";
 
 const ANSWER_CHANNEL = "voxel-frontier-multiplayer-answer-v3";
+const ANSWER_STORAGE_KEY = "voxel-frontier:pending-answer-v3";
 const MAX_CONNECTIONS = 8;
 
 function connectionSnapshot(connection) {
@@ -54,6 +55,14 @@ class MultiplayerSession {
         }
       };
     }
+    this.onAnswerStorage = (event) => {
+      if (event.key !== ANSWER_STORAGE_KEY || !event.newValue) return;
+      try {
+        const payload = JSON.parse(event.newValue);
+        if (payload?.token) this.acceptAnswerToken(payload.token).catch((error) => this.setStatus(`answer-error:${error.message}`));
+      } catch (_) {}
+    };
+    window.addEventListener("storage", this.onAnswerStorage);
     this.snapshot = this.buildSnapshot();
   }
 
@@ -238,9 +247,18 @@ class MultiplayerSession {
   }
 
   broadcastAnswerToken(token) {
-    if (!this.answerBridge) return false;
-    this.answerBridge.postMessage({ type: "answer-token", token, sentAt: Date.now() });
-    return true;
+    let delivered = false;
+    const payload = { type: "answer-token", token, sentAt: Date.now() };
+    if (this.answerBridge) {
+      this.answerBridge.postMessage(payload);
+      delivered = true;
+    }
+    try {
+      localStorage.setItem(ANSWER_STORAGE_KEY, JSON.stringify(payload));
+      localStorage.removeItem(ANSWER_STORAGE_KEY);
+      delivered = true;
+    } catch (_) {}
+    return delivered;
   }
 
   wireConnection(connection, isHost) {
@@ -368,7 +386,7 @@ class MultiplayerSession {
       shared: selectSharedWorldState(world),
       spawn: clone(world.spawn, { x: 0, y: 12, z: 0 }),
       assignedPlayer: clone(playerState, null),
-      version: 15,
+      version: 16,
     };
     return safeSend(connection.reliable, makeEnvelope(MESSAGE.WORLD_BOOTSTRAP, payload));
   }

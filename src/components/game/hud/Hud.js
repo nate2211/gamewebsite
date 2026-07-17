@@ -7,6 +7,7 @@ import { PERFORMANCE_EVENT } from "../../../game/systems/PerformanceGovernor";
 import { sampleBiome } from "../../../game/world/generation/worldGenerator";
 import { experienceForLevel, getMaxHealth } from "../../../game/config/progression";
 import ItemIcon from "../../items/icons/ItemIcon";
+import { MOB_TYPES } from "../../../game/config/mobTypes";
 
 
 function FpsCounter() {
@@ -50,13 +51,14 @@ export default function Hud({ worldName }) {
   const player = useSelector((state) => state.world.player);
   const seed = useSelector((state) => state.world.seed);
   const message = useSelector((state) => state.world.message);
-  const mount = useSelector((state) => state.world.mount);
   const progression = useSelector((state) => state.world.progression);
   const levelUpEvent = useSelector((state) => state.world.levelUpEvent);
   const armor = useSelector((state) => state.world.armor);
   const weather = useSelector((state) => state.world.weather);
   const fishing = useSelector((state) => state.world.fishing);
   const colony = useSelector((state) => state.world.colony);
+  const activeBoss = useSelector((state) => state.world.mobs.find((mob) => mob.id === state.world.bosses?.activeBossId) || null);
+  const bossAbility = useSelector((state) => state.world.bosses?.lastAbility || null);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [damageIndicatorVisible, setDamageIndicatorVisible] = useState(false);
   const [damageFlashStrength, setDamageFlashStrength] = useState(0);
@@ -137,35 +139,6 @@ export default function Hud({ worldName }) {
         {worldName}
       </Typography>
 
-      <Paper
-        elevation={8}
-        sx={{
-          position: "absolute",
-          top: 44,
-          left: 16,
-          p: 1.2,
-          bgcolor: "rgba(5,10,15,0.72)",
-          border: "1px solid rgba(255,255,255,0.14)",
-        }}
-      >
-        <Typography variant="caption" display="block">
-          WASD move · Space jump · Shift sprint
-        </Typography>
-        <Typography variant="caption" display="block">
-          Hold left click to mine · Left click attacks mobs
-        </Typography>
-        <Typography variant="caption" display="block">
-          Right click uses/tames/rides, places boats/blocks, or opens stations · E toggles inventory
-        </Typography>
-        <Typography variant="caption" display="block">
-          Hoe + right click tills soil · Seeds plant crops · Fishing rod casts with right click and reels with left click
-        </Typography>
-        {mount && (
-          <Typography variant="caption" display="block" sx={{ color: "#8ce7ff", fontWeight: 900 }}>
-            Mounted: {mount.type.replaceAll("_", " ")} · Shift dismount · Space horse jump
-          </Typography>
-        )}
-      </Paper>
 
       <Paper
         elevation={8}
@@ -188,6 +161,31 @@ export default function Hud({ worldName }) {
         </Typography>
         <FpsCounter />
       </Paper>
+
+      {activeBoss && !activeBoss.dyingUntil && (
+        <Paper
+          sx={{
+            position: "absolute",
+            top: 14,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "min(560px, 54vw)",
+            px: 1.5,
+            py: 1,
+            bgcolor: "rgba(28,8,20,.9)",
+            border: "2px solid rgba(255,120,95,.8)",
+          }}
+        >
+          <Stack direction="row" justifyContent="space-between" gap={2}>
+            <Typography fontWeight={1000}>{MOB_TYPES[activeBoss.type]?.name || activeBoss.type}</Typography>
+            <Typography variant="caption" fontWeight={900}>{Math.max(0, Math.ceil(activeBoss.health || 0))} / {Math.ceil(activeBoss.maxHealth || 1)}</Typography>
+          </Stack>
+          <LinearProgress color="error" variant="determinate" value={Math.max(0, Math.min(100, ((activeBoss.health || 0) / Math.max(1, activeBoss.maxHealth || 1)) * 100))} sx={{ height: 11, mt: 0.5 }} />
+          {bossAbility?.bossId === activeBoss.id && Date.now() - Number(bossAbility.at || 0) < 2800 && (
+            <Typography variant="caption" sx={{ color: "#ffcf9f", fontWeight: 900 }}>{bossAbility.ability}</Typography>
+          )}
+        </Paper>
+      )}
 
       <Box
         aria-hidden="true"

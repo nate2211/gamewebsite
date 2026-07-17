@@ -44,9 +44,9 @@ export function readSignalToken(name, locationLike = window.location) {
 
 export function buildFrontendSignalUrl(path, name, token) {
   const encoded = encodeURIComponent(token);
-  if (window.location.protocol === "file:") {
-    const base = window.location.href.split("#")[0];
-    return `${base}#${path}?${name}=${encoded}`;
-  }
-  return `${window.location.origin}${path}#${name}=${encoded}`;
+  // Hash routing keeps invitation URLs functional on static hosts, local files,
+  // subdirectory deployments, and hosts without server-side route rewrites.
+  const base = window.location.href.split("#")[0];
+  const route = `/${String(path || "").replace(/^\/+/, "")}`;
+  return `${base}#${route}?${name}=${encoded}`;
 }

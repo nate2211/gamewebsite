@@ -36,3 +36,20 @@
     transform: rotate(360deg);
   }
 }
+
+/* Arcane Frontier research and inventory drag feedback */
+.arcane-research-panel { padding: 4px; }
+.arcane-heading { align-items: flex-start; gap: 24px; }
+.arcane-branch-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.arcane-branch-card { border: 1px solid rgba(157, 117, 255, .28); border-radius: 14px; padding: 14px; background: radial-gradient(circle at top right, rgba(111, 67, 181, .2), rgba(7, 10, 18, .92) 58%); box-shadow: inset 0 1px rgba(255,255,255,.05), 0 16px 38px rgba(0,0,0,.18); }
+.arcane-node { --arcane-node-color: #9bdcff; display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: rgba(4, 8, 16, .72); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.arcane-node:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--arcane-node-color) 65%, transparent); }
+.arcane-node.is-unlocked { box-shadow: inset 3px 0 var(--arcane-node-color), 0 0 24px color-mix(in srgb, var(--arcane-node-color) 14%, transparent); }
+.arcane-node.is-selected { border-color: var(--arcane-node-color); background: color-mix(in srgb, var(--arcane-node-color) 12%, rgba(4, 8, 16, .84)); }
+.arcane-node-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; font-size: 24px; color: var(--arcane-node-color); background: color-mix(in srgb, var(--arcane-node-color) 15%, #090d18); border: 1px solid color-mix(in srgb, var(--arcane-node-color) 50%, transparent); text-shadow: 0 0 14px currentColor; }
+.arcane-node-copy { min-width: 0; }
+.arcane-node-action { min-width: 104px; display: flex; justify-content: flex-end; }
+.inventory-slot.is-drag-over { outline: 3px solid #9bdcff; outline-offset: -3px; box-shadow: 0 0 20px rgba(92, 194, 255, .55), inset 0 0 18px rgba(92, 194, 255, .22) !important; }
+.inventory-slot[draggable="true"] { cursor: grab !important; }
+.inventory-slot[draggable="true"]:active { cursor: grabbing !important; transform: scale(.96); }
+@media (max-width: 980px) { .arcane-branch-grid { grid-template-columns: 1fr; } .arcane-node { grid-template-columns: 42px minmax(0, 1fr); } .arcane-node-action { grid-column: 2; justify-content: flex-start; } }

@@ -17,7 +17,7 @@ for (const needle of [
   "prepareBootstrapChunks",
   "db.worldBootstraps.put",
   "Building visible spawn terrain",
-  "version: 14",
+  "version: 24",
 ]) {
   if (!home.includes(needle)) failures.push(`HomePage missing create-world guarantee: ${needle}`);
 }

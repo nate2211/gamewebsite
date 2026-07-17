@@ -88,7 +88,7 @@ export default function HomePage() {
           bootstrapRadius: CREATE_WORLD_BOOTSTRAP_RADIUS,
           revision: 0,
           updatedAt,
-          version: 14,
+          version: 24,
         });
         await db.worldBootstraps.put({
           worldId: id,

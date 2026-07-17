@@ -34,6 +34,7 @@ export default function StylizedPlayerModel({ playerState, local = false }) {
   const previous = useRef(new THREE.Vector3());
   const velocity = useRef(0);
   const colors = useMemo(() => paletteFor(playerState), [playerState]);
+  const modelDetail = useMemo(() => (typeof window === "undefined" ? "high" : localStorage.getItem("voxel:modelDetail") || "high"), []);
 
   useFrame(({ clock }, delta) => {
     const root = rootRef.current;
@@ -80,6 +81,18 @@ export default function StylizedPlayerModel({ playerState, local = false }) {
         <Piece color={colors.metal} position={[-0.36, 1.5, 0]} scale={[0.1, 0.23, 0.47]} />
         {[-1, 1].map((side) => <Piece key={`shoulder-${side}`} color={colors.trim} position={[side * 0.44, 1.56, -0.02]} scale={[0.14, 0.16, 0.36]} />)}
         <Piece color={colors.leather} position={[0, 1.3, 0.22]} scale={[0.14, 0.84, 0.08]} />
+        {modelDetail !== "standard" && (<>
+          {[-1, 1].map((side) => <Piece key={`torso-rivet-${side}`} color={colors.metal} position={[side * 0.29, 1.02, -0.247]} scale={[0.045, 0.045, 0.025]} />)}
+          <Piece color={colors.trim} position={[0, 1.7, -0.24]} scale={[0.34, 0.055, 0.025]} />
+        </>)}
+        {["ultra", "cinematic"].includes(modelDetail) && (<>
+          <Piece color={colors.leather} position={[-0.27, 1.32, 0.25]} scale={[0.07, 0.66, 0.055]} rotation={[0, 0, 0.18]} />
+          <Piece color={colors.metal} position={[0.34, 1.02, 0.23]} scale={[0.12, 0.18, 0.09]} />
+        </>)}
+        {modelDetail === "cinematic" && (<>
+          {[-0.31, -0.155, 0, 0.155, 0.31].map((x, index) => <Piece key={`chest-stitch-${x}`} color={index % 2 ? colors.trim : colors.metal} position={[x, 1.43, -0.253]} scale={[0.027, 0.07, 0.018]} />)}
+          <Piece color="#d7bd75" position={[0, 1.29, -0.26]} scale={[0.13, 0.13, 0.025]} rotation={[0, 0, Math.PI / 4]} />
+        </>)}
       </group>
       <group ref={headRef} position={[0, 2.08, 0]}>
         <Piece color={colors.skin} position={[0, 0, 0]} scale={[0.66, 0.67, 0.62]} />

@@ -1,0 +1,15 @@
+const fs=require('fs'); const path=require('path'); const root=path.resolve(__dirname,'..');
+const read=(p)=>fs.readFileSync(path.join(root,p),'utf8');
+const checks=[]; const need=(file,terms,label)=>{const text=read(file); const missing=terms.filter(t=>!text.includes(t)); checks.push([!missing.length,label,missing]);};
+need('src/game/config/blockTypes.js',['oak_stairs','stone_stairs','ladder','oak_fence','fence_post','oak_fence_gate','hay_bale','iron_nuggets','copper_nuggets','gold_nuggets'],'construction and nugget recipes');
+need('src/game/player/PlayerController.js',['isLadderAt','climbSpeed','parkour'],'ladder traversal');
+need('src/game/systems/InteractionController.js',['toggleFenceGate','oak_fence_gate_open'],'interactive gates');
+need('src/game/config/factions.js',['sunspire_kingdom','ironroot_hold','tideborn_enclave','Sunspire Concord','Ironroot Dominion','Tideborn League','FACTION_QUESTS','getFactionStanding','areFactionsHostile'],'faction definitions and reputation');
+need('src/game/world/generation/worldGenerator.js',['addFactionSettlement','FACTION_SETTLEMENT_TYPES','oak_fence','ladder','hay_bale','TERRAIN_GENERATOR_VERSION = 22'],'rare generated kingdoms and construction');
+need('src/game/entities/MobSystem.js',['areFactionsHostile','rival faction','sunspire_guard','ironroot_guard','tideborn_guard'],'faction patrol warfare');
+need('src/features/world/worldSlice.js',['cloneFactionState','acceptFactionQuest','claimFactionQuest','adjustFactionReputation','updateColonyStationOrders','maintainColonyStation','hayFeed'],'persistence, quests, colony orders, and feeding');
+need('src/components/colonies/panel/ColonyPanel.js',['Work order','Threat response','Maintenance','Priority','Repair'],'job-box command interface');
+need('src/game/config/perks.js',['cleaving_mastery','parkour','recipe_scholar','guardian_aura','master_excavator'],'expanded perk paths');
+need('src/data/db.js',['factions','version: 24'],'save schema');
+need('src/game/multiplayer/protocol.js',['"factions"','MULTIPLAYER_PROTOCOL_VERSION = 5'],'multiplayer faction sync');
+const failed=checks.filter(([ok])=>!ok); if(failed.length){failed.forEach(([,label,missing])=>console.error(`FAIL ${label}: ${missing.join(', ')}`)); process.exit(1);} checks.forEach(([,label])=>console.log(`PASS ${label}`)); console.log('Faction Frontiers validation passed.');

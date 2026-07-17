@@ -46,7 +46,7 @@ for (const file of sourceFiles) {
 }
 
 requireText("src/pages/GamePage.js", "flushSync", "instant E menu commit missing");
-requireText("src/pages/GamePage.js", 'event.code !== "KeyE"', "E inventory toggle missing");
+requireText("src/pages/GamePage.js", 'getBoundCode("inventory")', "remappable inventory toggle missing");
 requireText("src/components/inventory/dialog/InventoryDialog.js", "fast-inventory-overlay", "fast inventory shell missing");
 requireText("src/components/inventory/dialog/InventoryDialog.js", "if (!open) return null", "closed inventory unmount missing");
 requireText("src/components/game/canvas/GameCanvas.js", "<ColonySystem", "colony runtime not mounted");
@@ -73,7 +73,7 @@ requireText("src/features/world/worldSlice.js", "droppedItems", "physical drop p
 requireText("src/features/world/worldSlice.js", "cloneColonyState", "colony save hydration missing");
 requireText("src/data/db.js", "colony:", "colony serialization missing");
 requireText("src/data/db.js", "weather:", "weather serialization missing");
-requireText("src/game/world/generation/worldGenerator.js", "TERRAIN_GENERATOR_VERSION = 14", "generator version not updated");
+requireText("src/game/world/generation/worldGenerator.js", "TERRAIN_GENERATOR_VERSION = 22", "generator version not updated");
 
 const lockText = fs.readFileSync(path.join(root, "package-lock.json"), "utf8");
 if (/applied-caas|internal\.api\.openai/i.test(lockText)) fail("package-lock contains inaccessible internal registry URLs");

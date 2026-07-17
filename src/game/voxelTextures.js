@@ -280,29 +280,44 @@ export function getBlockMaterials(type) {
   return materials;
 }
 
-function drawCrackBranch(ctx, seed, originX, originY, length, depth, stage) {
-  if (depth <= 0 || length < 1.5) return;
-  let x = originX;
-  let y = originY;
-  const segments = 3 + Math.floor(randomFrom(seed, depth + 20) * 3);
-  let angle = randomFrom(seed, depth + 30) * Math.PI * 2;
+const STRAIGHT_CRACK_SEGMENTS = [
+  [32, 32, 32, 20],
+  [32, 20, 24, 12],
+  [32, 20, 42, 13],
+  [32, 32, 21, 38],
+  [21, 38, 12, 50],
+  [21, 38, 14, 30],
+  [32, 32, 44, 40],
+  [44, 40, 55, 34],
+  [44, 40, 49, 54],
+  [32, 32, 28, 48],
+  [28, 48, 20, 58],
+  [28, 48, 38, 60],
+  [32, 32, 46, 26],
+  [46, 26, 58, 24],
+  [46, 26, 52, 15],
+  [32, 20, 31, 6],
+  [24, 12, 15, 8],
+  [42, 13, 52, 7],
+  [12, 50, 7, 59],
+  [55, 34, 61, 29],
+  [49, 54, 55, 62],
+  [20, 58, 12, 63],
+  [58, 24, 63, 17],
+  [14, 30, 5, 25],
+];
 
+function strokeStraightCracks(ctx, segments, width, color, offsetX = 0, offsetY = 0) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = "square";
+  ctx.lineJoin = "miter";
   ctx.beginPath();
-  ctx.moveTo(x, y);
-  for (let index = 0; index < segments; index += 1) {
-    angle += (randomFrom(seed, index + depth * 31) - 0.5) * 0.95;
-    x += Math.cos(angle) * (length / segments);
-    y += Math.sin(angle) * (length / segments);
-    ctx.lineTo(x, y);
-  }
+  segments.forEach(([x1, y1, x2, y2]) => {
+    ctx.moveTo(x1 + offsetX, y1 + offsetY);
+    ctx.lineTo(x2 + offsetX, y2 + offsetY);
+  });
   ctx.stroke();
-
-  if (stage > 2 && depth > 1) {
-    drawCrackBranch(ctx, seed + 73, x, y, length * 0.58, depth - 1, stage);
-  }
-  if (stage > 5 && depth > 1) {
-    drawCrackBranch(ctx, seed + 149, originX + (x - originX) * 0.55, originY + (y - originY) * 0.55, length * 0.48, depth - 1, stage);
-  }
 }
 
 export function getCrackTexture(stageValue) {
@@ -315,18 +330,33 @@ export function getCrackTexture(stageValue) {
   canvas.height = 64;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, 64, 64);
-  ctx.strokeStyle = `rgba(18, 14, 12, ${0.64 + stage * 0.03})`;
-  ctx.lineWidth = 1.4 + stage * 0.12;
-  ctx.lineCap = "square";
-  ctx.lineJoin = "miter";
 
-  const branchCount = 1 + Math.floor(stage / 2);
-  for (let index = 0; index < branchCount; index += 1) {
-    const seed = 1709 + stage * 431 + index * 97;
-    const x = 32 + (randomFrom(seed, 1) - 0.5) * 14;
-    const y = 32 + (randomFrom(seed, 2) - 0.5) * 14;
-    drawCrackBranch(ctx, seed, x, y, 12 + stage * 2.7, 2 + Math.floor(stage / 3), stage);
-  }
+  // Reveal a fixed, angular fracture network in clean stages. Every mark is a
+  // straight line segment, so the damage reads like a voxel block splitting
+  // instead of a hand-drawn squiggle or circular HUD overlay.
+  const visibleCount = Math.min(
+    STRAIGHT_CRACK_SEGMENTS.length,
+    2 + stage * 2 + Math.floor(stage / 3)
+  );
+  const visibleSegments = STRAIGHT_CRACK_SEGMENTS.slice(0, visibleCount);
+  const strength = 0.68 + stage * 0.028;
+
+  // A one-pixel warm edge under the dark fracture gives the crack a recessed,
+  // industrial cut while preserving the nearest-neighbor voxel presentation.
+  strokeStraightCracks(
+    ctx,
+    visibleSegments,
+    2.6 + stage * 0.1,
+    `rgba(208, 181, 142, ${0.16 + stage * 0.012})`,
+    1,
+    1
+  );
+  strokeStraightCracks(
+    ctx,
+    visibleSegments,
+    1.45 + stage * 0.11,
+    `rgba(18, 14, 12, ${strength})`
+  );
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = THREE.NearestFilter;

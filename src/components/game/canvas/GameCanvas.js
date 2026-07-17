@@ -13,6 +13,8 @@ import { getInitialPixelRatio, getPerformanceProfile } from "../../../game/confi
 import ParticleSystem from "../../../game/particles/ParticleSystem";
 import LiquidSystem from "../../../game/liquids/LiquidSystem";
 import ShoreWaveSystem from "../../../game/ocean/ShoreWaveSystem";
+import OceanSwellSystem from "../../../game/ocean/OceanSwellSystem";
+import VolcanoEruptionSystem from "../../../game/ocean/VolcanoEruptionSystem";
 import ViewportController from "./ViewportController";
 import VoxelSky from "../../../game/world/rendering/VoxelSky";
 import ColonySystem from "../../../game/colonies/ColonySystem";
@@ -22,6 +24,10 @@ import ItemDropSystem from "../../../game/items/drops/ItemDropSystem";
 import ProjectileSystem from "../../../game/projectiles/ProjectileSystem";
 import WeatherSystem from "../../../game/weather/WeatherSystem";
 import RemotePlayersLayer from "../../multiplayer/RemotePlayersLayer";
+import ArcaneSystem from "../../../game/arcana/ArcaneSystem";
+import ArcaneEffects from "../../../game/arcana/ArcaneEffects";
+import HousingSystem from "../../../game/housing/HousingSystem";
+import BossSystem from "../../../game/bosses/BossSystem";
 
 
 function PausedWorldFrameKeeper({ active }) {
@@ -129,11 +135,17 @@ function GameCanvas({
           interactionEnabled={simulationEnabled}
         />
         <LiquidSystem enabled={simulationEnabled} />
+        <OceanSwellSystem playerRef={playerRef} enabled={simulationEnabled} />
         <ShoreWaveSystem />
+        <VolcanoEruptionSystem playerRef={playerRef} enabled={simulationEnabled} />
         <WeatherSystem playerRef={playerRef} enabled={simulationEnabled} />
         <FarmSystem active={terrainReady} />
         <ColonySystem enabled={simulationEnabled} />
+        <HousingSystem enabled={simulationEnabled} />
+        <BossSystem playerRef={playerRef} enabled={simulationEnabled} />
         <ParticleSystem />
+        <ArcaneSystem enabled={simulationEnabled} />
+        <ArcaneEffects />
         <ItemDropSystem playerRef={playerRef} enabled={simulationEnabled} />
         <ProjectileSystem />
         <FishingSystem enabled={simulationEnabled} />

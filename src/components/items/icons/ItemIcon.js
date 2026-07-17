@@ -119,6 +119,13 @@ function drawCube(ctx, itemId, color) {
     ctx.ellipse(32, 20, 11, 6, 0, 0, Math.PI * 2);
     ctx.stroke();
   }
+  if (["oak_window", "oak_door", "oak_stairs", "stone_stairs", "ladder", "oak_fence", "fence_post", "oak_fence_gate", "oak_fence_gate_open", "hay_bale", "oak_table", "oak_chair", "bookshelf", "flower_pot", "woven_rug", "wall_lantern", "arcane_table", "wardstone", "arcane_lantern", "ancient_brick", "carved_rune_brick", "treasure_chest", "storage_chest", "enchantment_table", "paleontology_lab", "fossil_block", "village_bell"].includes(itemId)) {
+    ctx.strokeStyle = itemId.includes("arcane") || itemId === "wardstone" ? "#9ff4ff" : "#f0c27a";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(20, 18, 24, 25);
+    if (itemId === "bookshelf") { ["#b6534e", "#4f79a8", "#d0a34a"].forEach((c,i)=>{ctx.fillStyle=c;ctx.fillRect(23+i*6,23,4,15);}); }
+    if (itemId === "oak_window") { ctx.fillStyle="rgba(205,247,255,.72)";ctx.fillRect(23,21,8,17);ctx.fillRect(34,21,8,17); }
+  }
   if (itemId === "torch") {
     ctx.clearRect(0, 0, 64, 64);
     ctx.save();
@@ -150,6 +157,39 @@ function drawTool(ctx, definition) {
   ctx.moveTo(-16, 18);
   ctx.lineTo(15, -17);
   ctx.stroke();
+
+  if (definition.weaponClass) {
+    const weapon = definition.weaponClass;
+    if (weapon === "spear") {
+      ctx.strokeStyle = color; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(-19, 22); ctx.lineTo(15, -18); ctx.stroke();
+      polygon(ctx, [[13,-30],[24,-18],[14,-8],[4,-18]], shade(color, 0.22), null);
+    } else if (weapon === "katana") {
+      ctx.strokeStyle = color; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(-7, 12); ctx.quadraticCurveTo(12,-6,18,-28); ctx.stroke();
+      ctx.strokeStyle = shade(color,0.55); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-5,10); ctx.quadraticCurveTo(11,-7,16,-26); ctx.stroke();
+      ctx.fillStyle="#6b472d"; ctx.fillRect(-18,13,23,5); ctx.fillStyle="#c7a45c"; ctx.fillRect(-9,5,18,4);
+    } else if (weapon === "greatsword") {
+      polygon(ctx, [[4,-30],[18,-24],[10,9],[-3,2]], shade(color,0.12));
+      polygon(ctx, [[6,-27],[12,-23],[6,3],[1,0]], shade(color,0.5), null);
+      ctx.fillStyle="#6f4a30";ctx.fillRect(-7,5,25,6);
+    } else if (weapon === "halberd") {
+      ctx.strokeStyle="#704c32";ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-19,22);ctx.lineTo(14,-20);ctx.stroke();
+      polygon(ctx, [[8,-29],[24,-24],[20,-7],[7,-11]], shade(color,0.18));
+      polygon(ctx, [[13,-30],[21,-21],[12,-13],[5,-21]], shade(color,0.42), null);
+    }
+    ctx.restore();
+    return;
+  }
+
+  if (definition.toolType === "wand") {
+    ctx.strokeStyle = definition.wandTier >= 3 ? "#bfe9ef" : definition.wandTier >= 2 ? "#d68c62" : "#a9774c";
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(-18, 20); ctx.lineTo(13, -17); ctx.stroke();
+    ctx.fillStyle = definition.wandTier >= 3 ? "#7ff3ff" : definition.wandTier >= 2 ? "#bc9aff" : "#76dcff";
+    polygon(ctx, [[12,-29],[22,-19],[13,-9],[3,-19]], ctx.fillStyle, null);
+    ctx.fillStyle="#efffff"; ctx.fillRect(11,-22,3,5);
+    ctx.restore();
+    return;
+  }
 
   if (definition.toolType === "pickaxe") {
     polygon(ctx, [[3, -22], [22, -25], [27, -18], [12, -14], [-5, -8], [-9, -14]], shade(color, 0.12));
@@ -194,16 +234,37 @@ function drawArmor(ctx, definition) {
 
 function drawMaterial(ctx, itemId, definition) {
   const color = definition.color || "#cccccc";
+  if (definition.category === "arcane") {
+    ctx.save(); ctx.translate(32,32); ctx.rotate(Math.PI/4);
+    ctx.fillStyle=shade(color,-0.25); ctx.fillRect(-16,-16,32,32);
+    ctx.fillStyle=shade(color,0.35); ctx.fillRect(-10,-10,20,20);
+    ctx.fillStyle="#efffff"; ctx.fillRect(-3,-9,6,18); ctx.fillRect(-9,-3,18,6);
+    ctx.restore(); return;
+  }
+  if (definition.category === "archaeology" || definition.category === "mythic") {
+    ctx.save(); ctx.translate(32, 32);
+    if (itemId === "dinosaur_egg") {
+      ctx.fillStyle = shade(color,-0.15); ctx.beginPath(); ctx.ellipse(0,2,16,22,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = shade(color,0.38); [[-6,-7],[6,-1],[-2,9],[8,12]].forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();});
+    } else if (itemId.includes("bone") || itemId.includes("fossil")) {
+      ctx.strokeStyle=shade(color,0.25);ctx.lineWidth=8;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(-16,15);ctx.lineTo(16,-15);ctx.stroke();
+      [[-17,16],[-10,21],[17,-16],[10,-21]].forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fillStyle=shade(color,0.1);ctx.fill();});
+    } else {
+      polygon(ctx, [[0,-25],[18,-12],[21,10],[5,25],[-17,17],[-23,-4],[-10,-20]], shade(color,-0.12));
+      polygon(ctx, [[0,-25],[18,-12],[5,-3],[-10,-20]], shade(color,0.4), null);
+    }
+    ctx.restore(); return;
+  }
   if (definition.category === "armor") {
     drawArmor(ctx, definition);
     return;
   }
-  if (itemId === "bucket" || itemId === "water_bucket") {
-    polygon(ctx, [[15, 16], [49, 16], [45, 52], [19, 52]], itemId === "water_bucket" ? "#3e97d8" : "#9da9b0");
+  if (["bucket", "water_bucket", "lava_bucket"].includes(itemId)) {
+    polygon(ctx, [[15, 16], [49, 16], [45, 52], [19, 52]], itemId === "water_bucket" ? "#3e97d8" : itemId === "lava_bucket" ? "#ef6425" : "#9da9b0");
     ctx.strokeStyle = "#e4edf1";
     ctx.lineWidth = 4;
     ctx.beginPath(); ctx.arc(32, 18, 20, Math.PI, Math.PI * 2); ctx.stroke();
-    if (itemId === "water_bucket") {
+    if (itemId === "water_bucket" || itemId === "lava_bucket") {
       ctx.fillStyle = "#75c7ff";
       ctx.fillRect(20, 31, 24, 14);
     }
@@ -269,15 +330,49 @@ function drawMaterial(ctx, itemId, definition) {
     }
     return;
   }
-  if (itemId === "apple") {
-    ctx.fillStyle = "#d83b36";
+  if (["apple", "golden_apple"].includes(itemId)) {
+    const golden = itemId === "golden_apple";
+    ctx.fillStyle = golden ? "#f1c83f" : "#d83b36";
     ctx.beginPath(); ctx.arc(31, 35, 17, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#f06c58";
+    ctx.fillStyle = golden ? "#fff1a0" : "#f06c58";
     ctx.beginPath(); ctx.arc(25, 29, 7, 0, Math.PI * 2); ctx.fill();
+    if (golden) {
+      ctx.strokeStyle = "#fff4b8"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(31, 35, 13, 0.3, Math.PI * 1.65); ctx.stroke();
+    }
     ctx.strokeStyle = "#5f3a1f"; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(32, 18); ctx.lineTo(35, 9); ctx.stroke();
-    ctx.fillStyle = "#55a447";
+    ctx.fillStyle = golden ? "#a9d15d" : "#55a447";
     ctx.beginPath(); ctx.ellipse(42, 13, 8, 4, 0.4, 0, Math.PI * 2); ctx.fill();
+    return;
+  }
+  if (["red_mushroom", "brown_mushroom"].includes(itemId)) {
+    const red = itemId === "red_mushroom";
+    ctx.fillStyle = "#e0c9a4";
+    polygon(ctx, [[27,29],[37,29],[41,55],[23,55]], "#d8c19f", null);
+    ctx.fillStyle = red ? "#b9363e" : "#7f5a40";
+    ctx.beginPath(); ctx.ellipse(32, 25, 21, 13, 0, Math.PI, Math.PI * 2); ctx.fill();
+    ctx.fillRect(11, 24, 42, 5);
+    ctx.fillStyle = red ? "#f3dfc6" : "#caa77f";
+    [[21,20],[32,15],[43,21],[28,26]].forEach(([x,y]) => { ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); });
+    return;
+  }
+  if (["bowl", "mushroom_soup"].includes(itemId)) {
+    polygon(ctx, [[10,24],[54,24],[47,50],[17,50]], itemId === "mushroom_soup" ? "#8f542f" : "#9c693d");
+    ctx.fillStyle = itemId === "mushroom_soup" ? "#c6844d" : "#c28b55";
+    ctx.beginPath(); ctx.ellipse(32,24,22,8,0,0,Math.PI*2); ctx.fill();
+    if (itemId === "mushroom_soup") {
+      ctx.fillStyle="#6d3f2c"; [[23,22],[34,25],[42,20]].forEach(([x,y])=>ctx.fillRect(x,y,5,3));
+      ctx.strokeStyle="#e8d6bd";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(20,17);ctx.quadraticCurveTo(17,10,22,6);ctx.moveTo(34,17);ctx.quadraticCurveTo(31,10,36,6);ctx.stroke();
+    }
+    return;
+  }
+  if (itemId === "enchanted_core") {
+    ctx.save(); ctx.translate(32,32); ctx.rotate(Math.PI/4);
+    ctx.fillStyle="#3b244f";ctx.fillRect(-17,-17,34,34);
+    ctx.fillStyle="#b968ee";ctx.fillRect(-12,-12,24,24);
+    ctx.fillStyle="#f0c4ff";ctx.fillRect(-4,-15,8,30);ctx.fillRect(-15,-4,30,8);
+    ctx.restore();
     return;
   }
   if (itemId.includes("fish")) {

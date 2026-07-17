@@ -258,9 +258,14 @@ function MiningEffect({ miningVisualRef }) {
       });
     }
 
-    const shake = Math.sin(clock.elapsedTime * (9 + progress * 30)) * progress * 0.012;
-    group.rotation.set(shake, -shake * 0.7, shake * 0.45);
-    group.scale.setScalar(1.001 + progress * 0.004);
+    const impactPulse = Math.sin(clock.elapsedTime * (12 + progress * 24)) * progress * 0.0035;
+    group.rotation.set(0, 0, 0);
+    group.position.set(
+      visual.position[0] + impactPulse,
+      visual.position[1],
+      visual.position[2]
+    );
+    group.scale.setScalar(1.001 + progress * 0.0025);
   });
 
   return (

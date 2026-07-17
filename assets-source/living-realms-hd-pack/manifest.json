@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "tileSize": 512,
+  "atlasSize": 4096,
+  "license": "Original Voxel Frontier source artwork",
+  "files": [
+    {
+      "name": "terrain-material-atlas.png",
+      "bytes": 20720644,
+      "sha256": "c99e4cdf7424cf4ad58c10383b5a3ad8147b46bbad143383e4ec7c53717ed593",
+      "usage": "Editable 8x8 atlas for runtime texture baking and future voxel models"
+    },
+    {
+      "name": "timber-furniture-atlas.png",
+      "bytes": 19352247,
+      "sha256": "32042d337c2b080c391f179b31c90a3ff12b6b224c4509a0b1ac21c803f882d4",
+      "usage": "Editable 8x8 atlas for runtime texture baking and future voxel models"
+    },
+    {
+      "name": "forge-weapon-atlas.png",
+      "bytes": 19153689,
+      "sha256": "5e1861df760552ca67527bdacb220429353e2fc4867d25f2bb64f1b838cec890",
+      "usage": "Editable 8x8 atlas for runtime texture baking and future voxel models"
+    },
+    {
+      "name": "arcane-enchantment-atlas.png",
+      "bytes": 19373475,
+      "sha256": "90dbcb746916df9e23678a065de441760820cde405101fa3f6ebaa3dea19d604",
+      "usage": "Editable 8x8 atlas for runtime texture baking and future voxel models"
+    },
+    {
+      "name": "creature-scale-hide-atlas.png",
+      "bytes": 19153114,
+      "sha256": "5d332075861245f45b9c8ec153beec9f5447a36283dd205b36ad47f0453f3018",
+      "usage": "Editable 8x8 atlas for runtime texture baking and future voxel models"
+    },
+    {
+      "name": "village-decor-prop-atlas.png",
+      "bytes": 19151278,
+      "sha256": "f509e3aee185eb53b9d577169e491a849cadebb3d967ba2f7885d8df52912f8d",
+      "usage": "Editable 8x8 atlas for runtime texture baking and future voxel models"
+    }
+  ]
+}

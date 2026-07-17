@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
-import { assignHotbarItem, setSelectedIndex } from "../../../features/world/worldSlice";
+import { assignHotbarItem, clearHotbarSlot, setSelectedIndex, swapHotbarItems } from "../../../features/world/worldSlice";
 import { ITEM_TYPES, getItemDefinition, getPlantTotalGrowthMs } from "../../../game/config/blockTypes";
 import InventorySlot from "../slots/InventorySlot";
 import ItemIcon, { preloadItemIcons } from "../../items/icons/ItemIcon";
@@ -11,6 +11,7 @@ const CATEGORY_LABELS = {
   all: "All",
   tool: "Weapons & Tools",
   armor: "Armor",
+  arcane: "Arcane",
   block: "Blocks",
   material: "Materials",
   food: "Food",
@@ -97,6 +98,19 @@ export default function InventoryTab() {
     dispatch(setSelectedIndex(index));
   }, [dispatch]);
 
+  const handleDropOnHotbar = useCallback((index, payload) => {
+    if (!payload) return;
+    if (payload.source === "hotbar" && Number.isInteger(payload.index)) {
+      dispatch(swapHotbarItems({ fromIndex: payload.index, toIndex: index }));
+      return;
+    }
+    if (payload.itemId && (inventory[payload.itemId] || 0) > 0) dispatch(assignHotbarItem({ index, itemId: payload.itemId }));
+  }, [dispatch, inventory]);
+
+  const handleDropOnInventory = useCallback((payload) => {
+    if (payload?.source === "hotbar" && Number.isInteger(payload.index)) dispatch(clearHotbarSlot({ index: payload.index }));
+  }, [dispatch]);
+
   const ownedItems = useMemo(() => Object.entries(inventory)
     .filter(([itemId, count]) => count > 0 && ITEM_TYPES[itemId])
     .filter(([itemId]) => category === "all" || getItemDefinition(itemId).category === category)
@@ -123,7 +137,7 @@ export default function InventoryTab() {
         <div>
           <Typography variant="h5" fontWeight={1000}>Inventory</Typography>
           <Typography variant="body2" color="text.secondary">
-            Browse by category, inspect item attributes, and assign gear to the selected quick slot.
+            Drag items into Quick Access, drag quick slots to swap them, or drag a quick slot back into the inventory to clear it.
           </Typography>
         </div>
         <Chip label={`Hotbar slot ${selectedIndex + 1} selected`} color="primary" />
@@ -153,6 +167,10 @@ export default function InventoryTab() {
                   emptyLabel={`Inventory slot ${index + 1}`}
                   onActivate={itemId ? handleSelectItem : undefined}
                   activationValue={itemId}
+                  draggable={Boolean(itemId)}
+                  dragData={itemId ? { source: "inventory", itemId } : null}
+                  onDropItem={handleDropOnInventory}
+                  onDoubleClick={itemId ? () => dispatch(assignHotbarItem({ index: selectedIndex, itemId })) : undefined}
                 />
               );
             })}
@@ -170,6 +188,10 @@ export default function InventoryTab() {
                 hotbarNumber={index + 1}
                 onActivate={handleSelectHotbar}
                 activationValue={index}
+                draggable={Boolean(itemId)}
+                dragData={itemId ? { source: "hotbar", index, itemId } : null}
+                onDropItem={(payload) => handleDropOnHotbar(index, payload)}
+                onDoubleClick={() => dispatch(clearHotbarSlot({ index }))}
               />
             ))}
           </div>

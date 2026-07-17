@@ -19,6 +19,11 @@ function buildRemoteWorld(bootstrap) {
     armor: assigned.armor || {},
     armorDurability: assigned.armorDurability || {},
     progression: assigned.progression || undefined,
+    arcana: assigned.arcana || undefined,
+    enchantments: assigned.enchantments || shared.enchantments || {},
+    villageQuests: assigned.villageQuests || shared.villageQuests || { accepted: [], claimed: [] },
+    factions: assigned.factions || shared.factions || { reputation: { sunspire: 0, ironroot: 0, tideborn: 0 }, accepted: [], claimed: [], discovered: [] },
+    archaeology: assigned.archaeology || shared.archaeology || {},
     metrics: assigned.metrics || {},
     claimedQuests: assigned.claimedQuests || [],
     hotbar: assigned.hotbar || [],
@@ -33,6 +38,9 @@ function buildRemoteWorld(bootstrap) {
     mount: assigned.mount || null,
     furnaces: shared.furnaces || {},
     colony: shared.colony || undefined,
+    storageChests: shared.storageChests || {},
+    housing: shared.housing || undefined,
+    bosses: shared.bosses || undefined,
     crops: shared.crops || [],
     droppedItems: shared.droppedItems || [],
     weather: shared.weather || { type: "clear", intensity: 0 },
@@ -41,7 +49,7 @@ function buildRemoteWorld(bootstrap) {
     revision: shared.revision || 0,
     remoteRoomId: bootstrap.roomId,
     updatedAt: Date.now(),
-    version: 15,
+    version: 24,
   };
 }
 
@@ -80,7 +88,7 @@ export default function JoinWorldPage() {
         const result = await multiplayerSession.joinInviteToken(inviteToken);
         if (cancelled) return;
         setAnswerUrl(result.url);
-        setStage("Send the return link to the host, then keep this page open.");
+        setStage("Open the return link on the host device. Same-browser tabs connect automatically; remote devices can share it back.");
         await navigator.clipboard?.writeText(result.url);
       } catch (nextError) {
         if (!cancelled) setError(nextError?.message || "The invitation could not be opened.");

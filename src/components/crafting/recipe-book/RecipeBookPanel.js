@@ -56,8 +56,10 @@ export default function RecipeBookPanel({ inventory, station = "crafting_table" 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const filtered = useMemo(() => recipes.filter((recipe) => {
-    const text = `${recipe.name} ${recipe.description || ""}`.toLowerCase();
-    return (!query || text.includes(query.toLowerCase())) && (category === "all" || categoryForRecipe(recipe) === category);
+    const ingredients = Object.keys(recipe.inputs || {}).map((itemId) => getItemDefinition(itemId).name).join(" ");
+    const outputs = Object.keys(recipe.outputs || {}).map((itemId) => getItemDefinition(itemId).name).join(" ");
+    const text = `${recipe.name} ${recipe.description || ""} ${ingredients} ${outputs}`.toLowerCase();
+    return (!query || text.includes(query.trim().toLowerCase())) && (category === "all" || categoryForRecipe(recipe) === category);
   }), [category, query, recipes]);
   const [selectedId, setSelectedId] = useState(recipes[0]?.id || "");
   const selected = filtered.find((recipe) => recipe.id === selectedId) || filtered[0] || recipes[0];
@@ -79,7 +81,9 @@ export default function RecipeBookPanel({ inventory, station = "crafting_table" 
         Search the full workbench catalog, filter by category, preview the exact pattern, and craft one, five, or the maximum available quantity.
       </Typography>
       <Stack direction={{ xs: "column", md: "row" }} gap={1.2} sx={{ mb: 1.4 }}>
-        <TextField fullWidth size="small" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search recipes" InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: "text.secondary" }} /> }} />
+        <TextField fullWidth size="small" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search recipes, ingredients, or outputs" inputProps={{ "data-recipe-search": "true", autoComplete: "off", spellCheck: false }}
+        onKeyDown={(event) => { if (event.key !== "Escape") event.stopPropagation(); }}
+        onKeyUp={(event) => event.stopPropagation()} InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: "text.secondary" }} /> }} />
         <FormControl size="small" sx={{ minWidth: 180 }}>
           <InputLabel>Category</InputLabel>
           <Select value={category} label="Category" onChange={(event) => setCategory(event.target.value)}>

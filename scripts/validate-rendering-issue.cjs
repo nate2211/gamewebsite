@@ -18,7 +18,7 @@ expect(renderer.includes('SURFACE_SHELL_GEOMETRY') && renderer.includes('<instan
 expect(renderer.includes('(Number(player.y) || 12) - 0.52'), 'The loading primer must align with the actual block top under the player.');
 expect(player.includes('const INITIAL_CAMERA_PITCH = -0.72'), 'The initial camera must frame visible ground instead of only sky.');
 expect(player.includes('setFromQuaternion(camera.quaternion, "YXZ")'), 'Pointer-lock resume must preserve the framed camera angle.');
-expect(viewModel.includes('model.scale.setScalar(portrait ? 0.6 : ultrawide ? 0.76 : 0.69)'), 'The camera-space first-person arm scale contract is missing.');
+expect(viewModel.includes('model.scale.setScalar(portrait ? 0.44 : ultrawide ? 0.53 : 0.49)'), 'The camera-space first-person arm scale contract is missing.');
 expect(viewModel.includes('gl.clearDepth()') && viewModel.includes('gl.render(overlayScene, overlayCamera)'), 'The hand must render after a depth-only clear so terrain cannot cover it.');
 expect(pause.includes('backdropFilter: "none"'), 'The pause overlay must not blur terrain into a flat blue background.');
 expect(css.includes('-webkit-backdrop-filter: none !important'), 'The CSS must disable pause blur across browsers.');

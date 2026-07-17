@@ -278,6 +278,239 @@ export const MOB_TYPES = {
     maxHealth: 20, speed: 1.15, attackDamage: 3, attackRange: 1.4, attackCooldown: 0.9, aggroRange: 15,
     bodyColor: "#54769b", headColor: "#c58b68", scale: [0.72, 1.65, 0.52], loot: [],
   },
+  plague_zombie: {
+    name: "Plaguebound Zombie", hostile: true, undead: true, elite: true, enhanced: true, caveDweller: true, alwaysActive: true,
+    maxHealth: 38, speed: 1.24, attackDamage: 7, attackRange: 1.55, attackCooldown: 0.82, aggroRange: 21,
+    bodyColor: "#415a46", headColor: "#79a65e", eyeColor: "#b8ff62", scale: [0.78, 1.78, 0.58], specialAttack: "plague_burst",
+    loot: [
+      { item: "enchanted_core", min: 1, max: 2, chance: 0.72 },
+      { item: "rotten_flesh", min: 1, max: 4, chance: 1 },
+      { item: "enchantment_shard", min: 1, max: 2, chance: 0.42 },
+      { item: "golden_apple", min: 1, max: 1, chance: 0.025 },
+    ],
+  },
+  rune_skeleton: {
+    name: "Runecarved Skeleton", hostile: true, undead: true, elite: true, enhanced: true, caveDweller: true, alwaysActive: true,
+    maxHealth: 34, speed: 1.32, attackDamage: 8, attackRange: 1.75, attackCooldown: 0.92, aggroRange: 24,
+    bodyColor: "#b5aec5", headColor: "#eee8ff", eyeColor: "#b678ff", scale: [0.7, 1.76, 0.52], specialAttack: "rune_volley",
+    loot: [
+      { item: "enchanted_core", min: 1, max: 2, chance: 0.8 },
+      { item: "bone", min: 2, max: 5, chance: 1 },
+      { item: "enchantment_shard", min: 1, max: 3, chance: 0.62 },
+      { item: "treasure_map_fragment", min: 1, max: 1, chance: 0.16 },
+    ],
+  },
+  venom_spider: {
+    name: "Venomweave Spider", hostile: true, elite: true, enhanced: true, caveDweller: true, alwaysActive: true,
+    maxHealth: 30, speed: 1.72, fleeSpeed: 1.95, attackDamage: 6, attackRange: 1.65, attackCooldown: 0.7, aggroRange: 22,
+    bodyColor: "#332742", headColor: "#5b3f6b", eyeColor: "#79ff68", scale: [1.18, 0.58, 1.34], specialAttack: "venom_leap",
+    loot: [
+      { item: "enchanted_core", min: 1, max: 2, chance: 0.7 },
+      { item: "string", min: 2, max: 5, chance: 1 },
+      { item: "spider_eye", min: 1, max: 2, chance: 0.9 },
+      { item: "enchantment_shard", min: 1, max: 2, chance: 0.4 },
+    ],
+  },
+  spore_slime: {
+    name: "Enchanted Spore Slime", hostile: true, elite: true, enhanced: true, caveDweller: true, alwaysActive: true,
+    maxHealth: 26, speed: 1.05, attackDamage: 5, attackRange: 1.35, attackCooldown: 0.76, aggroRange: 18,
+    bodyColor: "#8e5f9d", headColor: "#b784bd", eyeColor: "#f2c4ff", scale: [1.1, 1.1, 1.1], specialAttack: "spore_cloud",
+    loot: [
+      { item: "enchanted_core", min: 1, max: 2, chance: 0.58 },
+      { item: "slime_ball", min: 1, max: 4, chance: 1 },
+      { item: "red_mushroom", min: 1, max: 2, chance: 0.45 },
+      { item: "brown_mushroom", min: 1, max: 2, chance: 0.45 },
+    ],
+  },
+  elite_zombie: {
+    name: "Runebound Raider", hostile: true, undead: true, elite: true, alwaysActive: true,
+    maxHealth: 34, speed: 1.28, attackDamage: 6, attackRange: 1.55, attackCooldown: 0.86, aggroRange: 20,
+    bodyColor: "#3d5272", headColor: "#6ea15f", scale: [0.78, 1.78, 0.58],
+    loot: [
+      { item: "enchantment_shard", min: 1, max: 3, chance: 1 },
+      { item: "raider_katana", min: 1, max: 1, chance: 0.16 },
+      { item: "storm_warhammer", min: 1, max: 1, chance: 0.055 },
+      { item: "ancient_coin", min: 3, max: 8, chance: 0.9 },
+    ],
+  },
+  warlord_skeleton: {
+    name: "Fortress Warlord", hostile: true, undead: true, elite: true, alwaysActive: true,
+    maxHealth: 42, speed: 1.2, attackDamage: 8, attackRange: 1.85, attackCooldown: 1.08, aggroRange: 23,
+    bodyColor: "#aaa89c", headColor: "#eee9d8", scale: [0.72, 1.86, 0.54],
+    loot: [
+      { item: "enchantment_shard", min: 2, max: 4, chance: 1 },
+      { item: "guardian_halberd", min: 1, max: 1, chance: 0.14 },
+      { item: "runed_greatsword", min: 1, max: 1, chance: 0.1 },
+      { item: "dragon_scythe", min: 1, max: 1, chance: 0.045 },
+      { item: "ancient_coin", min: 6, max: 12, chance: 1 },
+    ],
+  },
+  villager_scholar: {
+    name: "Village Scholar", friendly: true, villager: true, npcRole: "scholar", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 24, speed: 0.82, attackDamage: 1, attackRange: 1.2, attackCooldown: 1.2, aggroRange: 13,
+    bodyColor: "#735b91", headColor: "#c89470", scale: [0.72, 1.7, 0.54], loot: [],
+    questIds: ["village_fossil", "village_elite_hunt", "village_bone_temple"],
+  },
+  villager_guard: {
+    name: "Village Guard", friendly: true, villager: true, guardian: true, npcRole: "guard", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 38, speed: 1.08, attackDamage: 7, attackRange: 1.65, attackCooldown: 0.86, aggroRange: 21,
+    bodyColor: "#536d85", headColor: "#bd8766", scale: [0.78, 1.76, 0.58], loot: [],
+    questIds: ["village_wolf_problem", "village_elite_hunt", "village_war_forge"],
+  },
+  villager_farmer: {
+    name: "Village Farmer", friendly: true, villager: true, npcRole: "farmer", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 24, speed: 0.88, attackDamage: 2, attackRange: 1.25, attackCooldown: 1.05, aggroRange: 13,
+    bodyColor: "#72864e", headColor: "#c99572", scale: [0.72, 1.68, 0.54], loot: [],
+    questIds: ["village_rebuild", "village_wolf_problem"],
+  },
+  villager_blacksmith: {
+    name: "Village Blacksmith", friendly: true, villager: true, npcRole: "blacksmith", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 30, speed: 0.82, attackDamage: 4, attackRange: 1.35, attackCooldown: 1.0, aggroRange: 14,
+    bodyColor: "#6c5148", headColor: "#bd8665", scale: [0.78, 1.72, 0.58], loot: [],
+    questIds: ["village_forge_supply", "village_war_forge"],
+  },
+  villager_healer: {
+    name: "Village Healer", friendly: true, villager: true, npcRole: "healer", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 26, speed: 0.9, attackDamage: 1, attackRange: 1.2, attackCooldown: 1.2, aggroRange: 13,
+    bodyColor: "#8a6f88", headColor: "#d0a07d", scale: [0.72, 1.7, 0.54], loot: [],
+    questIds: ["village_crypt_watch", "village_wolf_problem"],
+  },
+  villager_cartographer: {
+    name: "Village Cartographer", friendly: true, villager: true, npcRole: "cartographer", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 24, speed: 0.9, attackDamage: 1, attackRange: 1.2, attackCooldown: 1.2, aggroRange: 13,
+    bodyColor: "#527b7f", headColor: "#c18d6a", scale: [0.72, 1.7, 0.54], loot: [],
+    questIds: ["village_watchpost_maps", "village_bone_temple"],
+  },
+  villager_merchant: {
+    name: "Village Merchant", friendly: true, villager: true, npcRole: "merchant", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 25, speed: 0.86, attackDamage: 2, attackRange: 1.2, attackCooldown: 1.1, aggroRange: 13,
+    bodyColor: "#8c7044", headColor: "#c99370", scale: [0.74, 1.7, 0.56], loot: [],
+    questIds: ["village_watchpost_maps", "village_rebuild"],
+  },
+  sunspire_guard: {
+    name: "Sunspire Patrol Guard", friendly: true, villager: true, guardian: true, factionId: "sunspire", npcRole: "patrol_guard", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 46, speed: 1.16, attackDamage: 8, attackRange: 1.75, attackCooldown: 0.78, aggroRange: 24,
+    bodyColor: "#a63c31", headColor: "#d1a078", eyeColor: "#ffd86a", scale: [0.8, 1.82, 0.6], loot: [],
+  },
+  sunspire_citizen: {
+    name: "Sunspire Citizen", friendly: true, villager: true, factionId: "sunspire", npcRole: "citizen", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 28, speed: 0.92, attackDamage: 2, attackRange: 1.2, attackCooldown: 1.1, aggroRange: 14,
+    bodyColor: "#d3a83f", headColor: "#c99370", scale: [0.74, 1.72, 0.56], loot: [],
+  },
+  ironroot_guard: {
+    name: "Ironroot Holdguard", friendly: true, villager: true, guardian: true, factionId: "ironroot", npcRole: "patrol_guard", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 52, speed: 1.02, attackDamage: 9, attackRange: 1.82, attackCooldown: 0.86, aggroRange: 23,
+    bodyColor: "#56665e", headColor: "#b88362", eyeColor: "#e6ba62", scale: [0.84, 1.86, 0.64], loot: [],
+  },
+  ironroot_citizen: {
+    name: "Ironroot Artisan", friendly: true, villager: true, factionId: "ironroot", npcRole: "artisan", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 32, speed: 0.86, attackDamage: 3, attackRange: 1.3, attackCooldown: 1.05, aggroRange: 14,
+    bodyColor: "#697a70", headColor: "#bd8867", scale: [0.78, 1.74, 0.58], loot: [],
+  },
+  tideborn_guard: {
+    name: "Tideborn Warden", friendly: true, villager: true, guardian: true, factionId: "tideborn", npcRole: "patrol_guard", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 44, speed: 1.2, attackDamage: 8, attackRange: 1.8, attackCooldown: 0.76, aggroRange: 25,
+    bodyColor: "#337f8d", headColor: "#c79472", eyeColor: "#77e5e8", scale: [0.78, 1.8, 0.58], loot: [],
+  },
+  tideborn_citizen: {
+    name: "Tideborn Navigator", friendly: true, villager: true, factionId: "tideborn", npcRole: "navigator", alwaysActive: true, interactionPrompt: "Talk",
+    maxHealth: 27, speed: 0.98, attackDamage: 2, attackRange: 1.2, attackCooldown: 1.05, aggroRange: 15,
+    bodyColor: "#4d9eaa", headColor: "#ca9673", scale: [0.72, 1.72, 0.56], loot: [],
+  },
+  raptor: {
+    name: "Wild Raptor", hostile: true, dinosaur: true, packHunter: true, alwaysActive: true,
+    maxHealth: 28, speed: 1.85, attackDamage: 6, attackRange: 1.55, attackCooldown: 0.64, aggroRange: 19,
+    bodyColor: "#66824a", headColor: "#8eaa63", scale: [0.82, 1.12, 1.75],
+    loot: [{ item: "dinosaur_dna", min: 1, max: 1, chance: 0.16 }, { item: "ancient_bone", min: 1, max: 2, chance: 0.65 }],
+  },
+  triceratops: {
+    name: "Triceratops", passive: true, neutralPredator: true, dinosaur: true, herdAnimal: true, alwaysActive: true,
+    maxHealth: 62, speed: 0.86, fleeSpeed: 1.35, attackDamage: 9, attackRange: 1.9, attackCooldown: 1.2, aggroRange: 12,
+    bodyColor: "#758765", headColor: "#9cab7d", scale: [1.55, 1.28, 2.45],
+    loot: [{ item: "ancient_bone", min: 2, max: 5, chance: 0.9 }],
+  },
+  tyrannosaur: {
+    name: "Tyrannosaur", hostile: true, dinosaur: true, elite: true, alwaysActive: true,
+    maxHealth: 96, speed: 1.28, attackDamage: 14, attackRange: 2.35, attackCooldown: 1.05, aggroRange: 27,
+    bodyColor: "#6b4c39", headColor: "#8c6247", scale: [1.6, 2.55, 3.15],
+    loot: [{ item: "dinosaur_dna", min: 1, max: 2, chance: 0.55 }, { item: "ancient_bone", min: 4, max: 8, chance: 1 }, { item: "enchantment_shard", min: 1, max: 3, chance: 0.55 }],
+  },
+  sea_serpent: {
+    name: "Abyssal Sea Serpent", hostile: true, aquatic: true, mythic: true, alwaysActive: true,
+    maxHealth: 82, speed: 2.05, swimSpeed: 2.3, attackDamage: 12, attackRange: 2.4, attackCooldown: 0.9, aggroRange: 28,
+    bodyColor: "#285d69", headColor: "#4b8993", scale: [1.25, 0.9, 4.2],
+    loot: [{ item: "serpent_scale", min: 2, max: 6, chance: 1 }, { item: "enchantment_shard", min: 1, max: 3, chance: 0.7 }],
+  },
+  hydra: {
+    name: "Tide Hydra", hostile: true, aquatic: true, amphibious: true, mythic: true, elite: true, alwaysActive: true,
+    maxHealth: 145, speed: 1.05, swimSpeed: 1.35, attackDamage: 15, attackRange: 2.7, attackCooldown: 1.0, aggroRange: 31,
+    bodyColor: "#315f4d", headColor: "#5d9372", scale: [2.1, 1.85, 2.65],
+    loot: [{ item: "hydra_fang", min: 2, max: 5, chance: 1 }, { item: "enchantment_shard", min: 3, max: 7, chance: 1 }, { item: "guardian_halberd", min: 1, max: 1, chance: 0.08 }, { item: "storm_warhammer", min: 1, max: 1, chance: 0.06 }],
+  },
+  sky_dragon: {
+    name: "Cloud Dragon", hostile: true, flying: true, mythic: true, elite: true, alwaysActive: true,
+    maxHealth: 132, speed: 2.35, attackDamage: 16, attackRange: 2.8, attackCooldown: 1.15, aggroRange: 36,
+    bodyColor: "#623d78", headColor: "#a06db0", scale: [2.0, 1.25, 3.6],
+    loot: [{ item: "dragon_scale", min: 3, max: 8, chance: 1 }, { item: "enchantment_shard", min: 4, max: 8, chance: 1 }, { item: "runed_greatsword", min: 1, max: 1, chance: 0.1 }, { item: "dragon_scythe", min: 1, max: 1, chance: 0.08 }],
+  },
+  emberling: {
+    name: "Emberling", hostile: true, bossMinion: true, alwaysActive: true,
+    maxHealth: 18, speed: 1.55, attackDamage: 4, attackRange: 1.25, attackCooldown: 0.72, aggroRange: 18,
+    bodyColor: "#b6422f", headColor: "#ef7d42", eyeColor: "#ffd26a", scale: [0.72, 0.9, 0.72],
+    loot: [{ item: "redstone", min: 1, max: 2, chance: 0.45 }],
+  },
+  stone_titan: {
+    name: "Granite Titan", hostile: true, boss: true, elite: true, alwaysActive: true,
+    maxHealth: 360, speed: 0.82, attackDamage: 19, attackRange: 2.65, attackCooldown: 1.35, aggroRange: 34,
+    bodyColor: "#69675f", headColor: "#8f8a7d", eyeColor: "#ffc85a", scale: [2.1, 3.15, 1.35],
+    loot: [
+      { item: "titan_heart", min: 2, max: 4, chance: 1 },
+      { item: "titan_maul", min: 1, max: 1, chance: 1 },
+      { item: "titan_trophy", min: 1, max: 1, chance: 1 },
+      { item: "diamond", min: 2, max: 5, chance: 1 },
+      { item: "enchantment_shard", min: 5, max: 10, chance: 1 },
+    ],
+  },
+  ember_wyrm: {
+    name: "Ember Wyrm", hostile: true, boss: true, elite: true, flying: true, mythic: true, alwaysActive: true,
+    maxHealth: 310, speed: 2.45, attackDamage: 17, attackRange: 3.1, attackCooldown: 1.05, aggroRange: 42,
+    bodyColor: "#8e2f27", headColor: "#d95b36", eyeColor: "#ffd66b", scale: [2.45, 1.55, 4.5],
+    loot: [
+      { item: "wyrmfire_scale", min: 5, max: 10, chance: 1 },
+      { item: "ember_lance", min: 1, max: 1, chance: 1 },
+      { item: "ember_trophy", min: 1, max: 1, chance: 1 },
+      { item: "dragon_scale", min: 4, max: 8, chance: 1 },
+      { item: "enchantment_shard", min: 6, max: 12, chance: 1 },
+    ],
+  },
+  void_lich: {
+    name: "Void Lich", hostile: true, boss: true, elite: true, undead: true, alwaysActive: true,
+    maxHealth: 285, speed: 1.18, attackDamage: 15, attackRange: 2.4, attackCooldown: 0.92, aggroRange: 38,
+    bodyColor: "#35264f", headColor: "#9b80c7", eyeColor: "#e9c7ff", scale: [0.9, 2.15, 0.68],
+    loot: [
+      { item: "void_essence", min: 6, max: 12, chance: 1 },
+      { item: "void_reaper", min: 1, max: 1, chance: 1 },
+      { item: "void_trophy", min: 1, max: 1, chance: 1 },
+      { item: "primal_crystal", min: 3, max: 6, chance: 1 },
+      { item: "enchantment_shard", min: 7, max: 13, chance: 1 },
+    ],
+  },
+  arcane_golem: {
+    name: "Arcane Golem",
+    friendly: true,
+    guardian: true,
+    alwaysActive: true,
+    maxHealth: 38,
+    speed: 0.92,
+    attackDamage: 7,
+    attackRange: 1.75,
+    attackCooldown: 0.92,
+    aggroRange: 19,
+    bodyColor: "#74628f",
+    headColor: "#b6a7cf",
+    scale: [1.05, 1.48, 0.72],
+    loot: [],
+  },
   boat: {
     name: "Oak Boat",
     vehicle: true,
@@ -295,7 +528,7 @@ export const MOB_TYPES = {
 };
 
 export function createMob(id, type, x, y, z, random = Math.random) {
-  const definition = MOB_TYPES[type];
+  const definition = MOB_TYPES[type] || MOB_TYPES.sheep;
   return {
     id,
     type,
@@ -309,6 +542,7 @@ export function createMob(id, type, x, y, z, random = Math.random) {
     tamed: false,
     tameProgress: 0,
     customName: "",
+    factionId: definition.factionId || null,
   };
 }
 

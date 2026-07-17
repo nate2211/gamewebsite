@@ -16,7 +16,7 @@ for (const needle of ["LoadingVoxelPrimer", "!centerChunkMounted", "PRIMER_BLOCK
   if (!renderer.includes(needle)) failures.push(`WorldRenderer missing ${needle}`);
 }
 if (!player.includes("INITIAL_CAMERA_PITCH = -0.72") || !player.includes("pitchRef.current = INITIAL_CAMERA_PITCH")) failures.push("Player camera does not begin angled toward visible terrain");
-for (const needle of ["baseX = portrait ? 0.39", "-0.78 - twist", "scale={0.86}", "Camera-space coordinates"]) {
+for (const needle of ["baseX = portrait ? 0.27", "-0.45 - twist * 0.42", "scale={0.66}", "Camera-space coordinates"]) {
   if (!hand.includes(needle)) failures.push(`First-person voxel arm missing ${needle}`);
 }
 
